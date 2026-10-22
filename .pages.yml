@@ -1,0 +1,106 @@
+# Pages CMS configuration — https://pagescms.org
+# Defines the editing form for content.json. Numbers (01, 02…) are added by the site automatically.
+content:
+  - name: site
+    label: MAO website
+    description: "Everything shown on m-ao.ch. Save, and the site updates within a minute or two."
+    type: file
+    path: content.json
+    fields:
+
+      - name: projects
+        label: Projects (×)
+        description: "Shown on the wheel, in this order. Drag to reorder."
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.title} — {fields.place}"
+        fields:
+          - name: title
+            label: Title
+            type: string
+            required: true
+          - name: type
+            label: Type
+            description: "e.g. Installation, Public Design Study"
+            type: string
+          - name: place
+            label: Place
+            type: string
+          - name: year
+            label: Year
+            description: "Shown only when zoomed in"
+            type: string
+
+      - name: publications
+        label: Publications (÷)
+        description: "Sorted by date automatically, newest first. The month places it on the timeline."
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.outlet} — {fields.title} ({fields.year})"
+        fields:
+          - name: outlet
+            label: Publisher / journal
+            type: string
+            required: true
+          - name: title
+            label: Title
+            type: string
+            required: true
+          - name: year
+            label: Year
+            type: number
+            required: true
+          - name: month
+            label: Month (1–12)
+            type: number
+            required: true
+            options:
+              min: 1
+              max: 12
+
+      - name: about
+        label: About (−)
+        description: "One entry per paragraph."
+        type: text
+        list:
+          min: 1
+          collapsible:
+            collapsed: false
+
+      - name: contact
+        label: Contact (+)
+        type: object
+        fields:
+          - name: email
+            label: Email
+            type: string
+          - name: offices
+            label: Offices
+            description: "First = left column (under the M), second = right column (under the O)."
+            type: object
+            list:
+              min: 1
+              max: 2
+              collapsible:
+                collapsed: true
+                summary: "{fields.label} {fields.place}"
+            fields:
+              - name: label
+                label: Label
+                description: "e.g. Swiss office:"
+                type: string
+              - name: phone
+                label: Phone
+                type: string
+              - name: place
+                label: Place line
+                description: "e.g. Locarno – TI – CH"
+                type: string
+              - name: map
+                label: Map search
+                description: "What to search on the map when zoomed in, e.g. Locarno, Switzerland"
+                type: string
