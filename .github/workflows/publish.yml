@@ -1,1 +1,83 @@
+# Publishes the site on every change (including saves from Pages CMS).
+# Before publishing it writes the tab title, link preview and icon from content.json
+# into index.html, because link previews (WhatsApp, iMessage, mail…) only read plain HTML.
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare the site
+        run: |
+          mkdir -p _site
+          cp index.html content.json _site/
+          cp -R fonts _site/
+          if [ -d media ]; then cp -R media _site/; fi
+          node <<'EOF'
+          const fs = require('fs');
+          const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          let c = {};
+          try { c = JSON.parse(fs.readFileSync('content.json', 'utf8')); } catch (e) { console.log('content.json unreadable, using defaults'); }
+          const s = c.site || {};
+          const url = String(s.url || 'https://www.m-ao.ch').trim().replace(/\/+$/, '');
+          const rel = p => String(p || '').trim().replace(/^\/+/, '');
+          const abs = p => /^https?:\/\//.test(p) ? p : url + '/' + rel(p);
+          const title = s.title || 'MAO — Architecture office';
+          const pTitle = s.previewTitle || title;
+          const desc = s.previewDescription || 'Architecture office between Locarno (CH) and Cavenzano (IT).';
+          const img = rel(s.previewImage) || 'media/preview.png';
+          const icon = rel(s.icon) || 'media/icon.png';
+          const head = [
+            '<!-- SITE-HEAD:START — written automatically from content.json ("Site" in Pages CMS) on every publish -->',
+            `<title>${esc(title)}</title>`,
+            `<meta name="description" content="${esc(desc)}">`,
+            '<meta property="og:type" content="website">',
+            `<meta property="og:url" content="${esc(url)}/">`,
+            `<meta property="og:title" content="${esc(pTitle)}">`,
+            `<meta property="og:description" content="${esc(desc)}">`,
+            `<meta property="og:image" content="${esc(abs(img))}">`,
+            '<meta name="twitter:card" content="summary_large_image">',
+            `<link rel="icon" href="${esc(icon)}">`,
+            `<link rel="apple-touch-icon" href="${esc(icon)}">`,
+            '<!-- SITE-HEAD:END -->',
+          ].join('\n');
+          const file = '_site/index.html';
+          const html = fs.readFileSync(file, 'utf8');
+          const out = html.replace(/<!-- SITE-HEAD:START[\s\S]*?<!-- SITE-HEAD:END -->/, () => head);
+          if (out === html && !html.includes(head)) console.log('Markers not found: head left as is');
+          fs.writeFileSync(file, out);
+          console.log(head);
+          EOF
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
 
