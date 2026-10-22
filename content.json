@@ -1,0 +1,24 @@
+{
+  "contact": {
+    "email": "info@m-ao.ch",
+    "offices": [
+      { "label": "Swiss office:", "phone": "+41 76 799 34 44", "place": "Locarno – TI – CH", "map": "Locarno, Switzerland" },
+      { "label": "Italian office:", "phone": "+39 348 649 2501", "place": "Cavenzano – FVG – IT", "map": "Cavenzano, Udine, Italy" }
+    ]
+  },
+  "projects": [
+    { "title": "Notation", "type": "Generative Typography", "place": "Locarno", "year": "2025" },
+    { "title": "Fieldwork", "type": "Data Sculpture", "place": "Udine", "year": "2024" },
+    { "title": "Low Orbit", "type": "Installation", "place": "Zurich", "year": "2024" },
+    { "title": "Common Ground", "type": "Public Design Study", "place": "Milan", "year": "2023" }
+  ],
+  "about": [
+    "MAO works at the edge of language, mathematics, and image — treating the wordmark as an operator rather than a label.",
+    "Each symbol between the letters is a function: add, multiply, subtract, divide. The site performs the same logic it describes."
+  ],
+  "publications": [
+    { "outlet": "Journal of Applied Form", "title": "On Operators", "year": 2025, "month": 4 },
+    { "outlet": "Design Quarterly", "title": "Symbol as Interface", "year": 2024, "month": 10 },
+    { "outlet": "Self-published", "title": "Reading the Wordmark", "year": 2023, "month": 6 }
+  ]
+}

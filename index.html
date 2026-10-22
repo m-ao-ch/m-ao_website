@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MAO — Architecture office</title>
+<meta name="description" content="MAO — architecture office between Locarno (CH) and Cavenzano (IT).">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MAO — Architecture office">
+<meta property="og:description" content="Architecture office between Locarno (CH) and Cavenzano (IT).">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fff'/%3E%3Cpath d='M13.3 6h5.4v20h-5.4zM6 13.3h20v5.4H6z' fill='%23e10600'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/InterTight-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/InterTight-400.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* Self-hosted Inter Tight (SIL Open Font License) — no third-party requests */
+  @font-face{font-family:"Inter Tight";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/InterTight-400.woff2) format("woff2");}
+  @font-face{font-family:"Inter Tight";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/InterTight-500.woff2) format("woff2");}
+  @font-face{font-family:"Inter Tight";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/InterTight-700.woff2) format("woff2");}
+  @font-face{font-family:"Inter Tight";font-style:normal;font-weight:900;font-display:swap;src:url(fonts/InterTight-900.woff2) format("woff2");}
+
+  :root{
+    --ink:#111111;
+    --paper:#ffffff;
+    --red:#e10600;
+    --muted:#a6a6a6;
+    --grey:#c9c9c9;
+    --sans:"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --fs:160px;
+    --pfs:13px;
+    --hb:1px;            /* the thinnest line the screen can draw */
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+  @media (min-resolution:2dppx){ :root{ --hb:0.5px; } }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--paper);color:var(--ink);overflow:hidden;}
+  body{
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;-webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+  }
+  ::selection{background:var(--red);color:#fff;}
+  button{font:inherit;color:inherit;}
+
+  .stage{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden;touch-action:pan-y pinch-zoom;cursor:pointer;
+         user-select:none;-webkit-user-select:none;}
+  .zoomed .stage{cursor:zoom-out;}
+  /* --zs = the camera's transform scale. Line weights divide by it, so lines stay hairline-thin while zooming. */
+  .world{position:absolute;left:50%;top:50%;width:0;height:0;transform-origin:0 0;
+         --zs:1;--px:calc(1px / var(--zs));--hair:calc(var(--hb) / var(--zs));}
+  .rig{position:absolute;left:0;top:0;width:0;height:0;transition:opacity 500ms ease;}
+  body.loading .rig{opacity:0;}
+
+  /* ---------- Wordmark ---------- */
+  .wordmark{
+    position:absolute;left:0;top:0;display:flex;align-items:baseline;
+    margin:0;padding:0;border:0;background:none;
+    font-family:var(--sans);font-weight:900;font-size:var(--fs);
+    line-height:1;letter-spacing:-0.035em;color:var(--ink);white-space:nowrap;cursor:inherit;
+    touch-action:manipulation;transform-origin:50% 55%;
+  }
+  .wordmark:focus{outline:none;}
+  .wordmark:focus-visible::after{content:"";position:absolute;inset:-0.08em -0.12em;border:2px solid var(--red);pointer-events:none;}
+  .wordmark .l{display:inline-block;}
+  .wordmark .probe{display:inline-block;width:0;height:0;}
+  .op{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;}
+  /* one stroke weight for every bar; length in Swiss-cross proportion (arms 7:6) */
+  .bar{position:absolute;left:0;top:0;width:0.567em;height:0.17em;background:var(--red);}
+  .dot{position:absolute;left:0;top:0;width:0.19em;height:0.19em;border-radius:50%;background:var(--red);}
+  .ast{position:absolute;left:0;top:0;display:block;color:var(--red);font-size:0.85em;line-height:1;font-weight:900;
+       pointer-events:none;transform-origin:30% 30%;}
+
+  /* ---------- Panels ---------- */
+  .panel{position:absolute;left:0;top:0;font-size:var(--pfs);line-height:1.15;color:var(--ink);visibility:hidden;opacity:0;cursor:zoom-in;}
+  .panel.on{visibility:visible;}
+  .zoomed .panel{cursor:auto;}
+  .panel a{color:inherit;text-decoration:none;cursor:pointer;}
+  .head{font-weight:700;letter-spacing:0.04em;white-space:nowrap;}
+  .zx{opacity:0;transition:opacity 180ms ease;pointer-events:none;}
+  .zoomed .panel .zx{opacity:1;pointer-events:auto;transition:opacity 500ms ease 280ms;}
+
+  /* split-flap cells */
+  .flapw .ch{display:inline-block;position:relative;text-align:center;backface-visibility:hidden;}
+  .flapw .ch.fl::after{content:"";position:absolute;left:-0.04em;right:-0.04em;top:54%;height:max(var(--px,1px),0.06em);background:var(--paper);}
+
+  /* ---------- + Contact ---------- */
+  .p-contact{text-align:center;}
+  .p-contact .email a{border-bottom:var(--hair) solid currentColor;padding-bottom:0.08em;transition:color 160ms ease;}
+  .p-contact .groups{position:relative;margin-top:1.8em;min-height:3.7em;}
+  .p-contact .group{position:absolute;top:0;white-space:nowrap;}
+  .p-contact .group.sw{left:0;text-align:left;}
+  .p-contact .group.it{right:0;text-align:right;}
+  .p-contact .label{letter-spacing:0.04em;margin-bottom:0.2em;}
+  .p-contact a:hover{color:var(--red);}
+  .p-contact .tel{font-variant-numeric:tabular-nums;}
+  .p-contact .map{display:inline-block;margin-top:0.55em;color:var(--red);font-size:0.85em;letter-spacing:0.04em;}
+
+  /* ---------- × Projects: wheel ---------- */
+  .p-projects .head{position:absolute;left:0;bottom:100%;margin-bottom:0.6em;}
+  .wheel{position:relative;width:100%;height:100%;outline:none;cursor:grab;touch-action:none;perspective:70em;
+         -webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);
+                 mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);}
+  .wheel.grabbing{cursor:grabbing;}
+  .wheel .ruler{position:absolute;left:0;top:0;bottom:0;width:1.4em;}
+  .wheel .tick{position:absolute;left:0;top:50%;height:var(--hair);background:var(--grey);}
+  .wheel .tick.major{background:var(--ink);}
+  .wheel .needle{position:absolute;left:-0.4em;top:50%;width:1.75em;height:calc(1.5 * var(--px));transform:translateY(-50%);background:var(--red);}
+  .wheel .rows{position:absolute;left:2.35em;right:0;top:0;bottom:0;transform-style:preserve-3d;}
+  .wheel .row{position:absolute;left:0;top:50%;white-space:nowrap;cursor:pointer;backface-visibility:hidden;transform-origin:0 50%;}
+  .wheel .row.on{cursor:inherit;}
+  .wheel .row .num{transition:color 200ms ease;}
+  .wheel .row.on .num{color:var(--red);font-weight:700;}
+  .wheel .row .yr{color:var(--muted);margin-left:0.9em;font-variant-numeric:tabular-nums;}
+  .wheel:focus-visible .needle{box-shadow:0 0 0 0.2em rgba(225,6,0,.16);}
+
+  /* ---------- − About: the wordmark as a dimensioned drawing ---------- */
+  .p-about{text-align:center;}
+  .p-about p{margin:1.8em 0 0;}
+  .p-about p:first-child{margin-top:0;}
+  .p-about .w{display:inline-block;opacity:0;filter:blur(5px);transform:translateY(0.4em);
+              transition:opacity 160ms ease, filter 160ms ease, transform 160ms ease;}
+  .p-about.revealed .w{opacity:1;filter:blur(0);transform:none;
+              transition:opacity 520ms ease calc(var(--i) * 16ms + 260ms),
+                         filter 620ms ease calc(var(--i) * 16ms + 260ms),
+                         transform 720ms var(--ease-out) calc(var(--i) * 16ms + 260ms);}
+  .dm{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;}
+  .dm .ln,.dm .tk,.dm .sl{position:absolute;left:0;top:0;background:var(--ink);}
+  .dm.h .ln{height:var(--hair);transform:translateY(-50%) scaleX(0);transition:transform 160ms ease;}
+  .dm.v .ln{width:var(--hair);transform:translateX(-50%) scaleY(0);transition:transform 160ms ease;}
+  .dm.h .tk{width:var(--hair);transform:translate(-50%,-50%) scaleY(0);transition:transform 160ms ease;}
+  .dm.v .tk{height:var(--hair);transform:translate(-50%,-50%) scaleX(0);transition:transform 160ms ease;}
+  .dm .sl{height:var(--px);transform:translate(-50%,-50%) rotate(-45deg) scaleX(0);transition:transform 160ms ease;}
+  .dm .lb{position:absolute;left:0;top:0;padding:0 0.5em;background:var(--paper);color:var(--red);font-weight:500;font-size:0.86em;
+          font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.2;opacity:0;transition:opacity 120ms ease;}
+  .dm .lb.out{background:none;padding:0;}
+  .p-about.revealed .dm.h .ln{transform:translateY(-50%);transition:transform 900ms var(--ease-out) var(--dl);}
+  .p-about.revealed .dm.v .ln{transform:translateX(-50%);transition:transform 900ms var(--ease-out) var(--dl);}
+  .p-about.revealed .dm .tk{transform:translate(-50%,-50%);transition:transform 420ms var(--ease-out) calc(var(--dl) + 300ms);}
+  .p-about.revealed .dm .sl{transform:translate(-50%,-50%) rotate(-45deg);transition:transform 520ms cubic-bezier(.3,1.6,.5,1) calc(var(--dl) + 380ms);}
+  .p-about.revealed .dm .lb{opacity:1;transition:opacity 200ms ease calc(var(--dl) + 300ms);}
+  .p-about .note{position:absolute;left:-20em;right:-20em;color:var(--muted);font-size:0.8em;letter-spacing:0.02em;white-space:nowrap;}
+  .p-about .note button{border:0;background:none;padding:0;color:var(--red);cursor:pointer;border-bottom:var(--hair) solid currentColor;}
+
+  /* ---------- ÷ Publications: rolling list + perpetual timeline ---------- */
+  .p-pubs{text-align:right;}
+  .p-pubs .head{position:absolute;right:0;bottom:100%;margin-bottom:0.6em;}
+  .p-pubs .list{position:absolute;left:0;right:0;top:0;cursor:grab;touch-action:none;
+                -webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);
+                        mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);}
+  .p-pubs .list .row{position:absolute;left:0;right:0;top:50%;white-space:nowrap;color:var(--muted);cursor:pointer;transition:color 200ms ease;}
+  .p-pubs .list .row:hover{color:#6f6f6f;}
+  .p-pubs .list .row.on{color:var(--ink);cursor:inherit;}
+  .p-pubs .list .row .num{transition:color 200ms ease;}
+  .p-pubs .list .row.on .num{color:var(--red);font-weight:700;}
+  .p-pubs .list .row .num.l{display:none;}
+  .tl{position:absolute;left:0;right:0;bottom:0;outline:none;cursor:grab;touch-action:none;}
+  .tl.grabbing,.p-pubs .list.grabbing{cursor:grabbing;}
+  .tl .fade{position:absolute;inset:0;
+            -webkit-mask-image:linear-gradient(90deg,transparent,#000 16%,#000 84%,transparent);
+                    mask-image:linear-gradient(90deg,transparent,#000 16%,#000 84%,transparent);}
+  .tl .inner{position:absolute;left:0;right:0;}
+  .tl .axis{position:absolute;left:0;right:0;bottom:0;height:var(--hair);background:var(--ink);transform:scaleX(0);transition:transform 160ms ease;}
+  .tl .mt{position:absolute;left:0;bottom:0;width:var(--hair);background:var(--grey);transform-origin:50% 100%;}
+  .tl .mt.y{background:var(--ink);}
+  .tl .yl{position:absolute;left:0;top:100%;margin-top:0.4em;font-size:0.8em;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .tl .pb{position:absolute;left:0;bottom:0;width:calc(1.5 * var(--px));margin-left:calc(-0.75 * var(--px));background:var(--ink);transform-origin:50% 100%;transition:background-color 200ms ease;}
+  .tl .pb.on{background:var(--red);}
+  .tl .needle{position:absolute;left:50%;top:0;bottom:0;width:0;pointer-events:none;}
+  .tl .needle .vl{position:absolute;left:0;top:0;bottom:0;width:var(--px);transform:translateX(-50%);background:var(--red);}
+  .tl .needle .dt{position:absolute;left:0;bottom:0;width:0.55em;height:0.55em;transform:translate(-50%,50%);border-radius:50%;background:var(--red);}
+  .tl .needle .ro{position:absolute;bottom:100%;margin-bottom:0.3em;transform:translateX(-50%);font-size:0.8em;color:var(--red);
+                  font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .p-pubs.revealed .tl .axis{transform:none;transition:transform 800ms var(--ease-out);}
+
+  /* ---------- Compact (phone / tablet portrait) ---------- */
+  .compact .p-projects .head,.compact .p-pubs .head{position:static;margin:0 0 0.9em;}
+  .compact .p-pubs{text-align:left;}
+  .compact .p-pubs .list{position:relative;}
+  .compact .p-pubs .list .row .num.l{display:inline;}
+  .compact .p-pubs .list .row .num.r{display:none;}
+
+  /* ---------- Calibration ---------- */
+  .calib{position:fixed;inset:0;z-index:20;background:var(--paper);color:var(--ink);
+         font-size:13px;line-height:1.35;opacity:0;transition:opacity 280ms ease;touch-action:none;cursor:ew-resize;
+         user-select:none;-webkit-user-select:none;}
+  .calib.on{opacity:1;}
+  .calib[hidden]{display:none;}
+  .calib .head{position:absolute;left:24px;top:24px;}
+  .calib .help{position:absolute;left:24px;top:calc(24px + 1.6em);max-width:30em;color:var(--muted);}
+  .calib .card{position:absolute;left:0;top:0;border:var(--hb) solid var(--ink);pointer-events:none;
+               transition:border-color 240ms ease;}
+  .calib .card.flash{border-color:var(--red);}
+  .calib .corner{position:absolute;left:-1px;top:-1px;width:1.4em;height:1.4em;border-left:2px solid var(--red);border-top:2px solid var(--red);pointer-events:none;}
+  .calib .edge{position:absolute;top:-0.8em;bottom:-0.8em;width:2px;background:var(--red);pointer-events:none;transform:translateX(-50%);}
+  .calib .dm .ln,.calib .dm .tk,.calib .dm .sl{background:var(--ink);}
+  .calib .dm.h .ln{height:var(--hb);transform:translateY(-50%);}
+  .calib .dm.v .ln{width:var(--hb);transform:translateX(-50%);}
+  .calib .dm.h .tk{width:var(--hb);transform:translate(-50%,-50%);}
+  .calib .dm.v .tk{height:var(--hb);transform:translate(-50%,-50%);}
+  .calib .dm .sl{height:1px;transform:translate(-50%,-50%) rotate(-45deg);}
+  .calib .dm .lb{opacity:1;}
+  .calib .read{position:absolute;left:0;top:0;transform:translateX(-50%);white-space:nowrap;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .calib .read b{color:var(--ink);font-weight:500;}
+  .calib .btns{position:absolute;left:0;right:0;bottom:calc(28px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:2.2em;cursor:default;}
+  .calib .btns button{border:0;background:none;padding:0.3em 0;cursor:pointer;border-bottom:var(--hb) solid currentColor;}
+  .calib .btns .ok{color:var(--red);font-weight:700;}
+
+  .foot{position:fixed;right:calc(1.5rem + env(safe-area-inset-right));bottom:calc(1.5rem + env(safe-area-inset-bottom));
+        font-weight:700;color:var(--red);font-size:1.05rem;letter-spacing:0.02em;pointer-events:none;}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition-duration:1ms !important;transition-delay:0ms !important;} }
+</style>
+</head>
+<body class="loading">
+
+<main class="stage" id="stage">
+  <div class="world" id="world">
+    <div class="rig" id="rig">
+      <button class="wordmark" id="wm" type="button" aria-label="MAO — show next section">
+        <span class="l" id="lM">M</span><span class="l" id="lA">A</span><span class="l" id="lO">O</span><i class="probe" id="probe"></i>
+        <span class="op" aria-hidden="true"><b class="bar" id="barA"></b><b class="bar" id="barB"></b><b class="dot" id="dotT"></b><b class="dot" id="dotB"></b></span>
+        <span class="ast" id="ast" aria-hidden="true">*</span>
+      </button>
+      <section class="panel p-contact" id="pContact" aria-label="Contact"></section>
+      <section class="panel p-projects" id="pProjects" aria-label="Projects"></section>
+      <section class="panel p-about" id="pAbout" aria-label="About"></section>
+      <section class="panel p-pubs" id="pPubs" aria-label="Publications"></section>
+    </div>
+  </div>
+</main>
+
+<div class="calib" id="calib" hidden role="dialog" aria-label="Calibrate measures">
+  <div class="head">CALIBRATE:</div>
+  <div class="help">Hold a bank card flat against the screen, its corner in the red corner.
+    Drag anywhere until the red edge meets the card — move further up or down for finer control.</div>
+  <div class="card" id="calCard"><div class="corner"></div></div>
+  <div class="edge" id="calEdge"></div>
+  <div class="read" id="calRead"></div>
+  <div class="btns">
+    <button type="button" id="calCancel">Cancel</button>
+    <button type="button" id="calReset">Reset</button>
+    <button type="button" class="ok" id="calOk">Done</button>
+  </div>
+</div>
+
+<div class="foot">*Architecture office</div>
+<div class="sr" id="live" aria-live="polite"></div>
+
+<noscript><style>body{overflow:auto}.rig{opacity:1!important}</style>
+  <p style="font:16px/1.4 Helvetica,Arial,sans-serif;padding:2rem">MAO — Architecture office · <a href="mailto:info@m-ao.ch">info@m-ao.ch</a> · +41 76 799 34 44 (Locarno) · +39 348 649 2501 (Cavenzano)</p>
+</noscript>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   CONTENT
+   The live site reads content.json (edited through Pages CMS).
+   This copy is only a fallback, e.g. when the file is opened from disk.
+   Numbers (01, 02…) are generated automatically from the order.
+   ===================================================================== */
+const FALLBACK = {
+  contact: {
+    email: 'info@m-ao.ch',
+    offices: [
+      { label: 'Swiss office:',   phone: '+41 76 799 34 44', place: 'Locarno – TI – CH',    map: 'Locarno, Switzerland' },
+      { label: 'Italian office:', phone: '+39 348 649 2501', place: 'Cavenzano – FVG – IT', map: 'Cavenzano, Udine, Italy' },
+    ],
+  },
+  projects: [
+    { title: 'Notation',      type: 'Generative Typography', place: 'Locarno', year: '2025' },
+    { title: 'Fieldwork',     type: 'Data Sculpture',        place: 'Udine',   year: '2024' },
+    { title: 'Low Orbit',     type: 'Installation',          place: 'Zurich',  year: '2024' },
+    { title: 'Common Ground', type: 'Public Design Study',   place: 'Milan',   year: '2023' },
+  ],
+  about: [
+    'MAO works at the edge of language, mathematics, and image — treating the wordmark as an operator rather than a label.',
+    'Each symbol between the letters is a function: add, multiply, subtract, divide. The site performs the same logic it describes.',
+  ],
+  publications: [
+    { outlet: 'Journal of Applied Form', title: 'On Operators',         year: 2025, month: 4  },
+    { outlet: 'Design Quarterly',        title: 'Symbol as Interface',  year: 2024, month: 10 },
+    { outlet: 'Self-published',          title: 'Reading the Wordmark', year: 2023, month: 6  },
+  ],
+};
+let CONTENT = null;
+const pad2 = i => String(i + 1).padStart(2, '0');
+const str = v => (v == null ? '' : String(v)).trim();
+function normalize(c){
+  c = c || {};
+  const ct = c.contact || {};
+  const offices = (Array.isArray(ct.offices) ? ct.offices : []).slice(0, 2).map(o => ({
+    label: str(o.label), phone: str(o.phone), place: str(o.place), map: str(o.map) || str(o.place),
+  }));
+  const projects = (Array.isArray(c.projects) ? c.projects : []).filter(p => p && str(p.title))
+    .map((p, i) => ({ n: pad2(i), title: str(p.title), type: str(p.type), place: str(p.place), year: str(p.year) }));
+  const about = (Array.isArray(c.about) ? c.about : []).map(a => str(typeof a === 'object' && a ? a.text : a)).filter(Boolean);
+  const publications = (Array.isArray(c.publications) ? c.publications : []).filter(p => p && str(p.title || p.outlet))
+    .map(p => ({ outlet: str(p.outlet), title: str(p.title), year: parseInt(p.year, 10) || new Date().getFullYear(), month: clamp(parseInt(p.month, 10) || 1, 1, 12) }))
+    .sort((a, b) => (b.year * 12 + b.month) - (a.year * 12 + a.month))   // newest first
+    .map((p, i) => ({ ...p, n: pad2(i) }));
+  return { contact: { email: str(ct.email), offices }, projects, about, publications };
+}
+async function loadContent(){
+  try {
+    const r = await fetch('content.json', { cache: 'no-cache' });
+    if (r.ok){ const j = normalize(await r.json()); if (j.projects.length || j.publications.length || j.about.length) return j; }
+  } catch (_) {}
+  return normalize(FALLBACK);
+}
+
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+function clamp(v, a, b){ return Math.min(b, Math.max(a, v)); }
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const store = { get(k){ try { return localStorage.getItem(k); } catch (_) { return null; } }, set(k, v){ try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (_) {} } };
+
+const mqReduce = matchMedia('(prefers-reduced-motion: reduce)');
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener && mqReduce.addEventListener('change', e => { REDUCED = e.matches; });
+const mqFine = matchMedia('(hover: hover) and (pointer: fine)');
+
+function buzz(ms){
+  if (REDUCED || !navigator.vibrate || !navigator.userActivation || !navigator.userActivation.hasBeenActive) return;
+  try { navigator.vibrate(ms); } catch (_) {}
+}
+function timerGroup(){
+  const ids = new Set();
+  return {
+    after(ms, fn){ const id = setTimeout(() => { ids.delete(id); fn(); }, ms); ids.add(id); return id; },
+    clear(){ ids.forEach(clearTimeout); ids.clear(); },
+  };
+}
+
+/* =====================================================================
+   Spring engine — physically based, interruptible, keeps momentum
+   ===================================================================== */
+const P = {
+  press:  { k: 900,  c: 48 },
+  release:{ k: 520,  c: 17 },
+  snap:   { k: 430,  c: 33 },
+  bouncy: { k: 330,  c: 19 },
+  soft:   { k: 190,  c: 25 },
+  follow: { k: 1600, c: 80 },
+  exit:   { k: 800,  c: 56 },
+  cam:    { k: 135,  c: 23.2 },  // critically damped: a camera never wobbles
+};
+const running = new Set(), dirty = new Set();
+let rafId = 0, lastT = 0;
+function kick(){ if (!rafId){ lastT = performance.now(); rafId = requestAnimationFrame(tick); } }
+function tick(now){
+  const dt = clamp((now - lastT) / 1000, 0, 1 / 30);
+  lastT = now;
+  for (const s of running){ if (!s.step(dt)) running.delete(s); s.subs.forEach(f => dirty.add(f)); }
+  const fns = [...dirty]; dirty.clear(); fns.forEach(f => f());
+  rafId = (running.size || dirty.size) ? requestAnimationFrame(tick) : 0;
+}
+class Spring {
+  constructor(x, eps = 0.001){ this.x = x; this.t = x; this.v = 0; this.k = 300; this.c = 30; this.eps = eps; this.subs = new Set(); }
+  on(fn){ this.subs.add(fn); return this; }
+  get moving(){ return running.has(this); }
+  to(t, p = P.snap, v){
+    this.t = t; this.k = p.k; this.c = p.c;
+    if (v !== undefined) this.v = v;
+    if (REDUCED){ this.x = t; this.v = 0; running.delete(this); this.subs.forEach(f => dirty.add(f)); kick(); return this; }
+    running.add(this); kick(); return this;
+  }
+  jump(x){ this.x = this.t = x; this.v = 0; running.delete(this); this.subs.forEach(f => dirty.add(f)); kick(); return this; }
+  step(dt){
+    const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
+    for (let i = 0; i < n; i++){ const a = -this.k * (this.x - this.t) - this.c * this.v; this.v += a * h; this.x += this.v * h; }
+    if (Math.abs(this.x - this.t) < this.eps && Math.abs(this.v) < this.eps * 30){ this.x = this.t; this.v = 0; return false; }
+    return true;
+  }
+}
+
+/* =====================================================================
+   Split-flap — each glyph tips over on its hinge, seam across the middle
+   ===================================================================== */
+const BOARD_U = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+.–-:@';
+const BOARD_L = ' abcdefghijklmnopqrstuvwxyz0123456789+.–-:@';
+const flaps = new Set();
+function stopAllFlaps(){ [...flaps].forEach(r => r._flapStop && r._flapStop()); }
+function flap(root, { delay = 0, span = 380, interval = 74, minFlips = 3, maxFlips = 8 } = {}){
+  if (root._flapStop) root._flapStop();
+  if (REDUCED) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = []; while (walker.nextNode()) if (walker.currentNode.nodeValue.trim()) nodes.push(walker.currentNode);
+  const cells = [], swaps = [];
+  for (const node of nodes){
+    const wrap = el('span', 'flapw');
+    for (const ch of node.nodeValue){
+      if (ch === ' '){ wrap.append(' '); continue; }
+      const s = el('span', 'ch'); s.textContent = ch; wrap.append(s); cells.push({ s, ch });
+    }
+    node.replaceWith(wrap); swaps.push([wrap, node]);
+  }
+  const rootBox = root.getBoundingClientRect();
+  const boxes = cells.map(c => c.s.getBoundingClientRect());
+  const sx = root.offsetWidth ? rootBox.width / root.offsetWidth : 1, sy = root.offsetHeight ? rootBox.height / root.offsetHeight : 1;
+  const rotated = Math.abs(sx - sy) > 0.05;
+  cells.forEach((c, i) => {
+    const b = boxes[i];
+    c.s.style.width = (rotated ? c.s.offsetWidth : b.width / (sx || 1)) + 'px';
+    const set = c.ch !== c.ch.toUpperCase() ? BOARD_L : BOARD_U;
+    const idx = set.indexOf(c.ch);
+    const n = minFlips + Math.floor(Math.random() * (maxFlips - minFlips + 1));
+    c.seq = [];
+    for (let k = n; k > 0; k--) c.seq.push(idx >= 0 ? set[(idx - k + set.length * 4) % set.length] : set[1 + Math.floor(Math.random() * 26)]);
+    c.seq.push(c.ch);
+    const fx = rotated ? i / cells.length : rootBox.width ? (b.left - rootBox.left) / rootBox.width : 0;
+    const fy = rotated ? 0 : rootBox.height ? (b.top - rootBox.top) / rootBox.height : 0;
+    c.start = delay + fx * span + fy * 140 + Math.random() * 30;
+    c.done = false;
+    c.s.style.opacity = '0';
+  });
+  let raf = 0; const t0 = performance.now();
+  const stop = () => { cancelAnimationFrame(raf); swaps.forEach(([w, n]) => w.isConnected && w.replaceWith(n)); root._flapStop = null; flaps.delete(root); };
+  root._flapStop = stop; flaps.add(root);
+  const easeIn = x => x * x, easeOut = x => 1 - (1 - x) * (1 - x);
+  const frameFn = now => {
+    const t = now - t0; let left = 0;
+    for (const c of cells){
+      if (c.done) continue;
+      const lt = t - c.start;
+      if (lt < 0){ left++; continue; }
+      const k = Math.floor(lt / interval), ph = (lt % interval) / interval;
+      if (k >= c.seq.length){ c.s.style.transform = ''; c.s.style.color = ''; c.s.classList.remove('fl'); c.done = true; continue; }
+      left++;
+      const next = c.seq[k], prev = k ? c.seq[k - 1] : ' ';
+      const last = k === c.seq.length - 1;
+      let txt, ang;
+      if (ph < 0.5){ txt = prev; ang = easeIn(ph * 2) * 90; }
+      else { txt = next; ang = -(1 - easeOut((ph - 0.5) * 2)) * 90; }
+      c.s.textContent = txt;
+      c.s.style.opacity = txt === ' ' ? '0' : '1';
+      c.s.style.color = (last && ph >= 0.5) ? '' : 'var(--muted)';
+      c.s.style.transform = `perspective(3em) rotateX(${ang.toFixed(1)}deg)`;
+      c.s.classList.add('fl');
+    }
+    if (left) raf = requestAnimationFrame(frameFn); else stop();
+  };
+  raf = requestAnimationFrame(frameFn);
+}
+
+/* =====================================================================
+   Real size of a CSS pixel on this screen: calibrated value if the
+   visitor did it, otherwise an estimate from known displays.
+   ===================================================================== */
+const CAL_KEY = 'mao.mmPerPx.' + screen.width + 'x' + screen.height;
+function estimateMmPerPx(){
+  const saved = parseFloat(store.get(CAL_KEY));
+  if (saved > 0.05 && saved < 1) return { v: saved, calibrated: true };
+  const ua = navigator.userAgent, dpr = window.devicePixelRatio || 1;
+  const long = Math.max(screen.width, screen.height), short = Math.min(screen.width, screen.height);
+  const touchMac = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  let v = 0.2646; // CSS reference pixel, 96 per inch
+  if (/iPhone|iPod/.test(ua)) v = dpr >= 3 ? 0.1650 : 0.1558;
+  else if (/iPad/.test(ua) || touchMac) v = short === 744 ? 0.1558 : 0.1924;
+  else if (/Android/.test(ua)) v = /Mobile/.test(ua) ? 0.1600 : 0.1700;
+  else if (/Macintosh/.test(ua)){
+    if (dpr >= 2 || Math.abs(dpr - Math.round(dpr)) > 0.01) v = (long <= 1800 ? 0.1985 : 0.2331) * (dpr >= 2 ? dpr / 2 : 1);
+    else v = long === 1920 ? 0.2768 : long >= 2560 ? 0.2331 : 0.2646;
+  }
+  return { v, calibrated: false };
+}
+let MM = estimateMmPerPx();
+
+/* =====================================================================
+   DOM
+   ===================================================================== */
+const stage = $('stage'), world = $('world'), rig = $('rig'), wm = $('wm');
+const lM = $('lM'), lA = $('lA'), lO = $('lO'), probe = $('probe');
+const barA = $('barA'), barB = $('barB'), dotT = $('dotT'), dotB = $('dotB'), ast = $('ast');
+const live = $('live');
+const pContact = $('pContact'), pProjects = $('pProjects'), pAbout = $('pAbout'), pPubs = $('pPubs');
+
+/* =====================================================================
+   Geometry. Z is the "real" zoom: once the camera comes to rest, the
+   page is laid out again at Z× size, so text and lines are rendered
+   natively — crisp — instead of being a magnified picture.
+   ===================================================================== */
+const g = { fs: 160, pfs: 13, gap: 100, compact: false };
+let Z = 1;
+const canvas = document.createElement('canvas').getContext('2d');
+let ratios = null;
+const GAP = 0.70, BAR = 0.567;
+
+function fontStr(weight, px){ return `${weight} ${px}px ${getComputedStyle(wm).fontFamily}`; }
+/* Glyph metrics measured at 1000px and scaled — canvas rounds metrics to whole pixels,
+   which at 176px would put a dimension's end up to a pixel off the letter. */
+const metricCache = new Map();
+function glyph(ch, px){
+  let m = metricCache.get(ch);
+  if (!m){
+    canvas.font = fontStr(900, 1000);
+    const t = canvas.measureText(ch);
+    m = { w: t.width, l: t.actualBoundingBoxLeft, r: t.actualBoundingBoxRight, a: t.actualBoundingBoxAscent, d: t.actualBoundingBoxDescent,
+          fa: t.fontBoundingBoxAscent, fd: t.fontBoundingBoxDescent };
+    metricCache.set(ch, m);
+  }
+  const k = px / 1000;
+  return { width: m.w * k, actualBoundingBoxLeft: m.l * k, actualBoundingBoxRight: m.r * k, actualBoundingBoxAscent: m.a * k, actualBoundingBoxDescent: m.d * k,
+           fontBoundingBoxAscent: m.fa * k, fontBoundingBoxDescent: m.fd * k };
+}
+const rowHTML = p => `<span class="num">${esc(p.n)}</span> – ${esc(p.title)}${p.type ? ' – ' + esc(p.type) : ''}${p.place ? ' – ' + esc(p.place) : ''}<span class="yr zx">${esc(p.year || '')}</span>`;
+const pubHTML = p => `<span class="num l">${esc(p.n)} – </span>${[p.outlet, p.title, p.year].filter(Boolean).map(esc).join(' – ')}<span class="num r"> – ${esc(p.n)}</span>`;
+
+function measureRatios(){
+  document.documentElement.style.setProperty('--fs', '100px');
+  const r = { W0: (glyph('M', 100).width + glyph('A', 100).width + glyph('O', 100).width - 0.035 * 300) / 100 };
+  r.capH = glyph('H', 100).actualBoundingBoxAscent / 100;
+  const probeEl = el('div'); probeEl.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:100px;left:-9999px;top:0';
+  document.body.append(probeEl);
+  const w = html => { probeEl.innerHTML = html; return probeEl.offsetWidth / 100; };
+  r.proj = Math.max(10, ...CONTENT.projects.map(p => w(rowHTML(p).replace('zx', ''))));
+  r.pub = Math.max(10, ...CONTENT.publications.map(p => w(pubHTML(p).replace('num l"', 'num l" style="display:none"'))));
+  probeEl.remove();
+  return r;
+}
+
+function fitDesktop(vw, vh){
+  const r = ratios, open = r.W0 + GAP;
+  let fs = Math.min(176, vw * 0.15, vh * 0.26);
+  for (; fs >= 96; fs -= 2){
+    const pfs = clamp(fs * 0.072, 10, 13.6);
+    const side = (vw - open * fs) / 2 - 0.32 * fs - 32;
+    const need = Math.max(r.proj * pfs + 34, r.pub * pfs, 15 * pfs);
+    if (side >= need && (r.capH * fs) >= pfs * 1.6 * 4.2) return { fs, pfs, side };
+  }
+  return null;
+}
+
+function layout(){
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if (!ratios) ratios = measureRatios();
+  const fit = fitDesktop(vw, vh);
+  g.compact = !fit;
+  document.documentElement.classList.toggle('compact', g.compact);
+  let fs, pfs;
+  if (fit){ fs = fit.fs; pfs = fit.pfs; g.side = fit.side * Z; }
+  else {
+    const open = ratios.W0 + GAP;
+    fs = clamp(Math.min((vw * 0.80) / open, vh * 0.2), 48, 150);
+    pfs = clamp(fs * 0.105, 12, 15);
+  }
+  g.fs = fs * Z; g.pfs = pfs * Z; g.panelW = Math.min(vw - 32, 460) * Z;
+  const root = document.documentElement.style;
+  root.setProperty('--fs', g.fs + 'px');
+  root.setProperty('--pfs', g.pfs + 'px');
+
+  fs = g.fs;
+  // Letter positions straight from the font's advance widths (fractional, zoom-invariant),
+  // not from offsetLeft, which the browser rounds to whole pixels.
+  const mH = glyph('H', fs), mM = glyph('M', fs), mO = glyph('O', fs), mA = glyph('A', fs);
+  const ls = -0.035 * fs;
+  const xM = 0, xA = mM.width + ls, xO = xA + mA.width + ls, wO = mO.width + ls;
+  const W0 = xO + wO, H = fs;
+  g.W0 = W0; g.H = H; g.gap = GAP * fs;
+  const ox = -W0 / 2, oy = -H / 2;
+  wm.style.left = ox + 'px'; wm.style.top = oy + 'px';
+  const capH = mH.actualBoundingBoxAscent;
+  const base = (fs - (mH.fontBoundingBoxAscent + mH.fontBoundingBoxDescent)) / 2 + mH.fontBoundingBoxAscent;
+  const mInkR = xM + mM.actualBoundingBoxRight, aInkL = xA - mA.actualBoundingBoxLeft;
+  g.cx = (mInkR + aInkL) / 2;
+  g.cy = base - capH / 2;
+  const aFs = fs * 0.85;
+  const am = glyph('*', aFs);
+  const aBase = (aFs - (am.fontBoundingBoxAscent + am.fontBoundingBoxDescent)) / 2 + am.fontBoundingBoxAscent;
+  ast.style.left = (xO + wO + fs * 0.03) + 'px';
+  ast.style.top = (base - capH - aBase + am.actualBoundingBoxAscent) + 'px';
+
+  // final (open) positions in rig coordinates — ink edges are what gets measured
+  const G2 = g.gap / 2;
+  g.mL = ox + xM - G2;
+  g.oL = ox + xO + G2;
+  g.oR = ox + xO + wO + G2;
+  g.inkL = ox + xM - G2 - mM.actualBoundingBoxLeft;
+  g.mInkR = ox + mInkR - G2;
+  g.aInkL = ox + aInkL + G2;
+  g.aInkR = ox + xA + G2 + mA.actualBoundingBoxRight;
+  g.oInkL = ox + xO + G2 - mO.actualBoundingBoxLeft;
+  g.inkR = ox + xO + G2 + mO.actualBoundingBoxRight;
+  g.base = oy + base; g.capTop = g.base - capH; g.capH = capH;
+  g.oTop = g.base - mO.actualBoundingBoxAscent; g.oBot = g.base + mO.actualBoundingBoxDescent;
+  g.axis = oy + g.cy;
+  g.width = g.oR - g.mL;
+  g.inkW = g.inkR - g.inkL;
+  g.opCx = ox + g.cx;
+
+  layoutContact(); layoutProjects(); layoutAbout(); layoutPubs();
+  renderWM(); placeRig(true); applyRig();
+}
+
+/* =====================================================================
+   Wordmark & operator
+   ===================================================================== */
+const OPS = ['', '+', '×', '−', '÷'];
+const S = {
+  open: new Spring(0, 0.0005), len: new Spring(0, 0.0005), rotA: new Spring(0, 0.01), rotB: new Spring(0, 0.01),
+  dots: new Spring(0, 0.0005), ast: new Spring(1, 0.001), press: new Spring(1, 0.0002), dragX: new Spring(0, 0.05),
+  nudge: new Spring(0, 0.01), rigY: new Spring(0, 0.05),
+};
+function renderWM(){
+  const o = S.open.x, G2 = g.gap / 2;
+  lM.style.transform = `translate3d(${(-o * G2).toFixed(2)}px,0,0)`;
+  const t = `translate3d(${(o * G2).toFixed(2)}px,0,0)`;
+  lA.style.transform = t; lO.style.transform = t;
+  const vis = clamp(o * 2, 0, 1), L = Math.max(0, S.len.x), nd = S.nudge.x;
+  const base = `translate3d(${g.cx.toFixed(2)}px,${g.cy.toFixed(2)}px,0) translate(-50%,-50%)`;
+  barA.style.transform = `${base} rotate(${(S.rotA.x + nd).toFixed(2)}deg) scaleX(${L.toFixed(4)})`;
+  barB.style.transform = `${base} rotate(${(S.rotB.x + nd).toFixed(2)}deg) scaleX(${L.toFixed(4)})`;
+  barA.style.opacity = barB.style.opacity = vis;
+  const d = Math.max(0, S.dots.x), dy = d * 0.255 * g.fs, ds = clamp(d, 0, 1.25);
+  dotT.style.transform = `translate3d(${g.cx.toFixed(2)}px,${(g.cy - dy).toFixed(2)}px,0) translate(-50%,-50%) scale(${ds.toFixed(3)})`;
+  dotB.style.transform = `translate3d(${g.cx.toFixed(2)}px,${(g.cy + dy).toFixed(2)}px,0) translate(-50%,-50%) scale(${ds.toFixed(3)})`;
+  dotT.style.opacity = dotB.style.opacity = vis;
+  const as = clamp(S.ast.x, 0, 1.2);
+  ast.style.transform = `${t} scale(${(0.35 + 0.65 * as).toFixed(3)}) rotate(${((1 - as) * 90).toFixed(1)}deg)`;
+  ast.style.opacity = clamp(as, 0, 1);
+  wm.style.transform = `translate3d(${(S.dragX.x * Z).toFixed(2)}px,0,0) scale(${S.press.x.toFixed(4)})`;
+}
+['open','len','rotA','rotB','dots','ast','press','dragX','nudge'].forEach(k => S[k].on(renderWM));
+const applyRig = () => { rig.style.transform = `translate3d(0,${(S.rigY.x * Z).toFixed(2)}px,0)`; };
+S.rigY.on(applyRig);
+
+const symT = timerGroup();
+const nearest = (cur, target) => target + 180 * Math.round((cur - target) / 180);
+const ANG = { '+': [0, 90], '×': [45, 135], '−': [0, 0], '÷': [0, 0] };
+function setSymbol(from, to){
+  symT.clear();
+  const v = OPS[to], pv = OPS[from];
+  if (!v){ S.open.to(0, P.snap); S.len.to(0, P.snap); S.dots.to(0, P.exit); S.ast.to(1, P.bouncy); return; }
+  S.ast.to(0, P.exit);
+  S.open.to(1, P.bouncy);
+  const [a, b] = ANG[v];
+  if (!pv){
+    S.rotA.jump(0); S.rotB.jump(0);
+    if (S.len.x < 0.05) S.len.jump(0);
+    S.len.to(1, P.soft);
+    symT.after(130, () => {
+      S.rotA.to(nearest(S.rotA.x, a), P.bouncy); S.rotB.to(nearest(S.rotB.x, b), P.bouncy);
+      if (v === '÷') S.dots.to(1, P.bouncy);
+    });
+    return;
+  }
+  S.len.to(1, P.soft);
+  S.rotA.to(nearest(S.rotA.x, a), P.bouncy);
+  S.rotB.to(nearest(S.rotB.x, b), P.bouncy);
+  S.dots.to(v === '÷' ? 1 : 0, v === '÷' ? P.bouncy : P.exit);
+}
+
+/* =====================================================================
+   Panels
+   ===================================================================== */
+function makePanel(node, hooks){
+  const p = { node, hooks, dir: [0, 0], pr: new Spring(0, 0.002), timers: timerGroup(), box: () => ({ x: 0, y: 0, w: 1, h: 1 }) };
+  node.inert = true; node.setAttribute('aria-hidden', 'true');
+  p.pr.on(() => {
+    const v = p.pr.x, d = (1 - v) * 16;
+    node.style.opacity = clamp(v, 0, 1);
+    node.style.transform = (v >= 0.999) ? '' : `translate3d(${(p.dir[0] * d).toFixed(2)}px,${(p.dir[1] * d).toFixed(2)}px,0)`;
+    if (p.pr.t === 0 && v <= 0.002) node.classList.remove('on');
+  });
+  return p;
+}
+function showPanel(p){
+  p.timers.clear();
+  p.node.inert = false; p.node.removeAttribute('aria-hidden');
+  p.node.classList.add('on');
+  const go = () => { p.pr.to(1, P.soft); p.hooks.enter && p.hooks.enter(); };
+  if (g.compact) p.timers.after(90, go); else go();
+}
+function hidePanel(p){
+  p.timers.clear();
+  p.node.inert = true; p.node.setAttribute('aria-hidden', 'true');
+  p.pr.to(0, P.exit);
+  p.hooks.exit && p.hooks.exit();
+}
+const nodeBox = (n, extraTop = 0, extraBottom = 0) => {
+  const x = parseFloat(n.style.left) || 0, y = parseFloat(n.style.top) || 0;
+  return { x, y: y - extraTop, w: n.offsetWidth, h: n.offsetHeight + extraTop + extraBottom };
+};
+
+/* ---------- + Contact: two mirrored columns, a perfect box ---------- */
+let contact;
+function buildContact(){
+  const c = CONTENT.contact;
+  if (c.email) pContact.append(el('div', 'email', `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`));
+  const groups = el('div', 'groups');
+  c.offices.forEach((o, i) => groups.append(el('div', 'group ' + (i ? 'it' : 'sw'),
+    (o.label ? `<div class="label">${esc(o.label)}</div>` : '') +
+    (o.phone ? `<div>t. <a class="tel" href="tel:${esc(o.phone.replace(/[^\d+]/g, ''))}">${esc(o.phone)}</a></div>` : '') +
+    (o.place ? `<div>${esc(o.place)}</div>` : '') +
+    (o.map ? `<a class="map zx" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.map)}">${i ? '← MAP' : 'MAP →'}</a>` : ''))));
+  pContact.append(groups);
+  contact = makePanel(pContact, {
+    enter(){ flap(pContact, { delay: 120 }); },
+    exit(){ pContact._flapStop && pContact._flapStop(); },
+  });
+}
+function layoutContact(){
+  const sw = pContact.querySelector('.sw'), it = pContact.querySelector('.it');
+  let left = g.inkL, w = g.inkW;
+  const need = (sw ? sw.offsetWidth : 0) + (it ? it.offsetWidth : 0) + g.pfs * 2;
+  if (need > w){ left -= (need - w) / 2; w = need; }
+  pContact.style.width = w + 'px';
+  pContact.style.left = left + 'px';
+  pContact.style.top = (0.68 * g.fs) + 'px';
+  contact.dir = [0, -1];
+  contact.box = () => nodeBox(pContact, 0, g.pfs * 1.6);
+}
+
+/* ---------- × Projects: wheel ---------- */
+let wheel, projects;
+function makeWheel(){
+  const items = CONTENT.projects, n = Math.max(1, items.length);
+  const head = el('div', 'head', 'PROJECTS:');
+  const box = el('div', 'wheel'); box.tabIndex = 0;
+  box.setAttribute('role', 'listbox'); box.setAttribute('aria-label', 'Projects');
+  const ruler = el('div', 'ruler'), rowsEl = el('div', 'rows'), needle = el('div', 'needle');
+  box.append(ruler, rowsEl, needle);
+  pProjects.append(head, box);
+  const rows = items.map((p, i) => {
+    const r = el('div', 'row', rowHTML(p)); r.id = 'prj-' + i; r.setAttribute('role', 'option');
+    rowsEl.append(r); return r;
+  });
+  const SUB = 4, ticks = [];
+  for (let k = -SUB * 2; k <= (n - 1) * SUB + SUB * 2; k++){
+    const major = k % SUB === 0 && k >= 0 && k <= (n - 1) * SUB;
+    const t = el('div', 'tick' + (major ? ' major' : ''));
+    t.style.width = (major ? 0.95 : 0.47) + 'em';
+    ruler.append(t); ticks.push({ t, f: k / SUB });
+  }
+  const s = new Spring(0, 0.0005);
+  let H = 100, rowH = 20, th = 0.4, R = 50, active = -1;
+  function dims(h, rh){
+    H = h; rowH = rh; R = H / 2;
+    th = Math.min(0.55, (rowH / R) * 1.05);
+    rows.forEach(r => { r.style.height = rowH + 'px'; r.style.lineHeight = rowH + 'px'; r.style.marginTop = (-rowH / 2) + 'px'; });
+    render();
+  }
+  function project(f){
+    const a = (f - s.x) * th;
+    if (Math.abs(a) >= Math.PI / 2) return null;
+    return { y: R * Math.sin(a), c: Math.cos(a), a };
+  }
+  function render(){
+    rows.forEach((r, i) => {
+      const q = project(i);
+      if (!q){ r.style.visibility = 'hidden'; return; }
+      r.style.visibility = '';
+      const near = 1 - Math.min(1, Math.abs(i - s.x));
+      r.style.transform = `translate3d(0,${q.y.toFixed(2)}px,0) rotateX(${(-q.a * 57.2958).toFixed(2)}deg)`;
+      r.style.opacity = (Math.pow(q.c, 1.4) * (0.42 + 0.58 * near)).toFixed(3);
+    });
+    ticks.forEach(({ t, f }) => {
+      const q = project(f);
+      if (!q){ t.style.visibility = 'hidden'; return; }
+      t.style.visibility = '';
+      t.style.transform = `translate3d(0,${q.y.toFixed(2)}px,0)`;
+      t.style.opacity = (q.c * q.c).toFixed(3);
+    });
+    const idx = clamp(Math.round(s.x), 0, n - 1);
+    if (idx !== active){
+      if (active >= 0) buzz(4);
+      active = idx;
+      rows.forEach((r, i) => { r.classList.toggle('on', i === idx); r.setAttribute('aria-selected', i === idx); });
+      box.setAttribute('aria-activedescendant', 'prj-' + idx);
+    }
+  }
+  s.on(render);
+  const rubber = x => x < 0 ? x * 0.28 : x > n - 1 ? n - 1 + (x - (n - 1)) * 0.28 : x;
+  function set(i, p = P.bouncy){ s.to(clamp(i, 0, n - 1), p); }
+
+  let drag = null;
+  box.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    drag = { y: e.clientY, x: e.clientX, s0: s.x, last: e.clientY, t: performance.now(), v: 0, moved: false, scale: camScale() };
+    box.setPointerCapture(e.pointerId); box.classList.add('grabbing');
+  });
+  box.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dy = (e.clientY - drag.y) / drag.scale;
+    if (Math.abs(e.clientY - drag.y) > 5 || Math.abs(e.clientX - drag.x) > 5) drag.moved = true;
+    const now = performance.now(), dt = Math.max(1, now - drag.t);
+    drag.v = 0.8 * ((e.clientY - drag.last) / drag.scale / dt) + 0.2 * drag.v; drag.last = e.clientY; drag.t = now;
+    if (drag.moved) s.to(rubber(drag.s0 - dy / rowH), P.follow);
+  });
+  const end = e => {
+    if (!drag) return;
+    box.classList.remove('grabbing');
+    if (document.activeElement === box) box.blur();   // a mouse/touch user keeps the arrows for navigating
+    const d = drag; drag = null;
+    if (!d.moved){
+      const hit = e && document.elementFromPoint(e.clientX, e.clientY), row = hit && hit.closest && hit.closest('.wheel .row');
+      if (row) set(rows.indexOf(row));
+      if (!zoomed) zoomIn();
+      return;
+    }
+    set(Math.round(s.x - (d.v * 90) / rowH));
+  };
+  box.addEventListener('pointerup', end);
+  box.addEventListener('pointercancel', () => { if (drag){ drag.moved = true; end(); } });
+
+  let acc = null, snapT = 0;
+  box.addEventListener('wheel', e => {
+    e.preventDefault();
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    const notch = Math.abs(dy) >= 50 && Number.isInteger(dy);
+    if (acc === null) acc = s.t;
+    if (notch){ acc = clamp(Math.round(acc) + Math.sign(dy), 0, n - 1); set(acc); }
+    else { acc = clamp(acc + dy / (rowH * 2.2), -0.4, n - 0.6); s.to(rubber(acc), P.follow); }
+    clearTimeout(snapT);
+    snapT = setTimeout(() => { set(Math.round(clamp(acc, 0, n - 1))); acc = null; }, 110);
+  }, { passive: false });
+
+  box.addEventListener('keydown', e => {
+    if (!box.matches(':focus-visible')) return;
+    const k = e.key;
+    if (k === 'ArrowDown'){ set(Math.round(s.t) + 1); e.preventDefault(); e.stopPropagation(); }
+    else if (k === 'ArrowUp'){ set(Math.round(s.t) - 1); e.preventDefault(); e.stopPropagation(); }
+    else if (k === 'Home'){ set(0); e.preventDefault(); }
+    else if (k === 'End'){ set(n - 1); e.preventDefault(); }
+  });
+
+  return { dims, enter(){ const a = clamp(Math.round(s.t), 0, n - 1); s.jump(a - 1.6); set(a, P.soft); } };
+}
+function layoutProjects(){
+  const pfs = g.pfs, rowH = Math.round(pfs * 1.75 * 100) / 100;
+  if (!g.compact){
+    const w = ratios.proj * pfs + 3.2 * pfs;
+    pProjects.style.left = (g.oR + 0.32 * g.fs) + 'px';
+    pProjects.style.top = g.capTop + 'px';
+    pProjects.style.width = w + 'px';
+    pProjects.style.height = g.capH + 'px';
+    pProjects.querySelector('.wheel').style.height = '';
+    wheel.dims(g.capH, rowH);
+    projects.dir = [-1, 0];
+    projects.box = () => nodeBox(pProjects, pfs * 2.2, 0);
+  } else {
+    const w = g.panelW, h = rowH * 5;
+    pProjects.style.left = (-w / 2) + 'px';
+    pProjects.style.top = (0.68 * g.fs) + 'px';
+    pProjects.style.width = w + 'px';
+    pProjects.style.height = 'auto';
+    pProjects.querySelector('.wheel').style.height = h + 'px';
+    wheel.dims(h, rowH);
+    projects.dir = [0, -1];
+    projects.box = () => nodeBox(pProjects);
+  }
+}
+
+/* ---------- − About: the wordmark drawn and dimensioned ---------- */
+let about;
+const dims = {};
+const toMM = px => (px / Z) * MM.v;
+const fmtMM = mm => zoomed ? `${mm} mm` : `${(mm / 10).toFixed(1)} cm`;   // mm are whole numbers here
+function fmtLen(px){ return fmtMM(Math.round(toMM(px))); }
+/* Round a chain so its parts add up to its rounded total, as on a drawing */
+function chainMM(lens){
+  const raw = lens.map(toMM), total = Math.round(raw.reduce((a, b) => a + b, 0));
+  const out = raw.map(Math.floor);
+  let left = total - out.reduce((a, b) => a + b, 0);
+  raw.map((r, i) => [r - Math.floor(r), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0){ out[i]++; left--; } });
+  return out;
+}
+function buildAbout(){
+  let i = 0;
+  CONTENT.about.forEach(t => {
+    const p = el('p');
+    t.split(' ').forEach((w, j, arr) => {
+      const s = el('span', 'w'); s.textContent = w; s.style.setProperty('--i', i++);
+      p.append(s); if (j < arr.length - 1) p.append(' ');
+    });
+    pAbout.append(p);
+  });
+  const mk = (key, orient, delay, side) => {
+    const d = el('div', 'dm ' + orient); d.style.setProperty('--dl', delay + 'ms');
+    d._side = side; pAbout.append(d); dims[key] = d;
+  };
+  mk('width', 'h', 40, -1);      // overall width, above
+  mk('height', 'v', 220, -1);    // cap height, left of M
+  mk('axis', 'v', 380, 1);       // O split at the operator's axis, right of O
+  mk('chain', 'h', 520, 1);      // every letter back to back, below
+  pAbout.append(el('div', 'note zx', '<span class="nt"></span> · <button type="button" class="cal">calibrate</button> · <span class="sc"></span>'));
+  pAbout.querySelector('.cal').addEventListener('click', e => { e.stopPropagation(); openCalib(); });
+  about = makePanel(pAbout, {
+    enter(){
+      requestAnimationFrame(() => pAbout.classList.add('revealed'));
+      about.timers.after(300, () => pAbout.querySelectorAll('.dm .lb').forEach(lb => flap(lb, { span: 60, interval: 60, minFlips: 3, maxFlips: 7 })));
+    },
+    exit(){ pAbout.classList.remove('revealed'); },
+  });
+}
+/* A dimension: one line through the points, at each point a perpendicular tick
+   and a 45° slash of the same length, and one label per span. */
+function placeDim(d, pts, at){
+  const horiz = d.classList.contains('h');
+  const SL = g.pfs * 0.8;
+  const nL = pts.length - 1;
+  if (d._n !== pts.length){
+    d.innerHTML = '<div class="ln"></div>' + '<div class="tk"></div><div class="sl"></div>'.repeat(pts.length) + '<div class="lb"></div>'.repeat(nL);
+    d._n = pts.length;
+  }
+  const ln = d.querySelector('.ln'), tks = d.querySelectorAll('.tk'), sls = d.querySelectorAll('.sl'), lbs = d.querySelectorAll('.lb');
+  const a = pts[0], b = pts[pts.length - 1];
+  if (horiz){ Object.assign(ln.style, { left: a + 'px', top: at + 'px', width: (b - a) + 'px' }); }
+  else { Object.assign(ln.style, { left: at + 'px', top: a + 'px', height: (b - a) + 'px' }); }
+  pts.forEach((p, i) => {
+    const x = horiz ? p : at, y = horiz ? at : p;
+    Object.assign(tks[i].style, { left: x + 'px', top: y + 'px', [horiz ? 'height' : 'width']: SL + 'px' });
+    Object.assign(sls[i].style, { left: x + 'px', top: y + 'px', width: SL + 'px' });
+  });
+  d._spans = [];
+  for (let i = 0; i < nL; i++) d._spans.push({ a: pts[i], b: pts[i + 1], at, lb: lbs[i] });
+  labelDim(d, false);
+}
+function labelDim(d, animate){
+  const horiz = d.classList.contains('h');
+  // the chain below must add up to the overall width above; other dimensions round on their own
+  const lens = (d._spans || []).map(sp => sp.b - sp.a);
+  const parts = d === dims.chain ? chainMM(lens) : lens.map(l => Math.round(toMM(l)));
+  (d._spans || []).forEach((sp, i) => {
+    const lb = sp.lb, len = sp.b - sp.a, mid = (sp.a + sp.b) / 2;
+    lb.textContent = fmtMM(parts[i]);
+    lb.classList.remove('out');
+    const need = lb.offsetWidth + g.pfs * 0.8 * 2;   // label plus both ends' marks
+    const fits = need <= len;
+    if (!fits) lb.classList.add('out');
+    const off = fits ? 0 : d._side * (g.pfs * 0.95);
+    if (horiz){
+      lb.style.left = mid + 'px'; lb.style.top = (sp.at + off) + 'px';
+      lb.style.transform = 'translate(-50%,-50%)';
+    } else {
+      lb.style.left = (sp.at + off) + 'px'; lb.style.top = mid + 'px';
+      lb.style.transform = 'translate(-50%,-50%) rotate(-90deg)';
+    }
+    if (animate) flap(lb, { span: 60, interval: 60, minFlips: 2, maxFlips: 5 });
+  });
+}
+function relabelAbout(animate){
+  Object.values(dims).forEach(d => labelDim(d, animate));
+  const note = pAbout.querySelector('.note');
+  note.querySelector('.nt').textContent = MM.calibrated ? 'Real size, calibrated for this screen' : 'Real size on this screen, ±5%';
+  note.querySelector('.sc').textContent = zoomed ? `scale ${camTarget.s.toFixed(1)} : 1` : 'scale 1 : 1';
+}
+function layoutAbout(){
+  const fs = g.fs, pfs = g.pfs;
+  pAbout.style.width = g.inkW + 'px';
+  pAbout.style.left = g.inkL + 'px';
+  const ps = [...pAbout.querySelectorAll('p')];
+  const h = ps.reduce((a, p) => a + p.offsetHeight, 0) + pfs * 1.8 * Math.max(0, ps.length - 1);
+  const bottom = -0.68 * fs, top = bottom - h;
+  pAbout.style.top = top + 'px';
+  pAbout.style.height = h + 'px';
+  const ox = g.inkL, oy = top;                    // panel origin in rig coords
+  const X = x => x - ox, Y = y => y - oy;
+  // side dimensions sit off the letters; on narrow screens they tuck in so their labels stay on screen
+  const edge = (window.innerWidth / 2 - 6) * Z;
+  const off = clamp(Math.min(Math.max(0.16 * fs, 22 * Z), Math.min(edge - g.inkR, g.inkL + edge) - pfs * 1.75), pfs * 0.9, 1e4);
+  // overall width — ink edge of M to ink edge of O
+  placeDim(dims.width, [X(g.inkL), X(g.inkR)], Y((bottom + g.capTop) / 2));
+  // cap height — M's flat foot to M's flat top
+  placeDim(dims.height, [Y(g.capTop), Y(g.base)], X(g.inkL - off));
+  // right: O's top to the operator's axis to O's bottom
+  placeDim(dims.axis, [Y(g.oTop), Y(g.axis), Y(g.oBot)], X(g.inkR + off));
+  // below: every letter back to back — M | slot | A | O
+  // A and O touch (their ink overlaps by a hair, depending on screen and font): one shared mark between them.
+  // Any span too small to read is folded into its neighbour, so no negative or zero measure can appear.
+  const chain = [g.inkL, g.mInkR, g.aInkL, (g.aInkR + g.oInkL) / 2, g.inkR]
+    .reduce((pts, x) => { if (x - pts[pts.length - 1] >= pfs * 1.5) pts.push(x); else if (pts.length > 1 && x === g.inkR) pts[pts.length - 1] = x; return pts; }, [g.inkL - 1e9])
+    .slice(1);
+  placeDim(dims.chain, chain.map(X), Y(g.oBot + Math.max(0.15 * fs, 18 * Z)));
+  const note = pAbout.querySelector('.note');
+  note.style.top = (-pfs * 2.6) + 'px';
+  relabelAbout(false);
+  about.dir = [0, 1];
+  const yChain = g.oBot + Math.max(0.15 * fs, 18 * Z);
+  about.box = () => ({ x: g.inkL - off - pfs * 1.5, y: top - pfs * 2.8, w: g.inkW + 2 * off + pfs * 3, h: (yChain + pfs * 1.5) - (top - pfs * 2.8) });
+}
+
+/* ---------- ÷ Publications: rolling list + a timeline with no ends ---------- */
+let timeline, pubs;
+const pubT = timerGroup();
+function makeTimeline(){
+  const items = CONTENT.publications, n = items.length;
+  const head = el('div', 'head', 'PUBLICATIONS:');
+  const list = el('div', 'list');
+  list.setAttribute('role', 'listbox'); list.setAttribute('aria-label', 'Publications');
+  const rows = items.map((p, i) => { const r = el('div', 'row', pubHTML(p)); r.setAttribute('role', 'option'); list.append(r); return r; });
+  const tl = el('div', 'tl'); tl.tabIndex = 0;
+  tl.setAttribute('role', 'slider'); tl.setAttribute('aria-label', 'Publications timeline');
+  const fade = el('div', 'fade'), inner = el('div', 'inner');
+  const axis = el('div', 'axis'), needle = el('div', 'needle', '<div class="vl"></div><div class="dt"></div><div class="ro"></div>');
+  const ro = needle.querySelector('.ro');
+  fade.append(inner); inner.append(axis);
+  const nInner = el('div', 'inner'); nInner.append(needle);
+  tl.append(fade, nInner);
+  pPubs.append(head, list, tl);
+  if (!n) return { dims(){}, enter(){}, exit(){} };
+
+  const mi = items.map(p => p.year * 12 + (p.month - 1));   // newest first
+  const SPAN = 20;
+  const tickPool = [], labPool = [], marks = [];
+  for (let i = 0; i < SPAN * 2 + 4; i++){ const t = el('div', 'mt'); inner.append(t); tickPool.push(t); }
+  for (let i = 0; i < 6; i++){ const l = el('div', 'yl'); inner.append(l); labPool.push(l); }
+  items.forEach(() => { const b = el('div', 'pb'); inner.append(b); marks.push(b); });
+
+  const t = new Spring(mi[0], 0.001), rv = new Spring(0, 0.001);
+  let W = 300, Ht = 40, lh = 16, active = -1;
+  const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const proj = m => { const a = (m - t.x) / SPAN * Math.PI / 2; if (Math.abs(a) >= Math.PI / 2) return null; return { x: W / 2 + (W / 2) * Math.sin(a), c: Math.cos(a) }; };
+  const pxPerMonth = () => (W / 2) * (Math.PI / 2) / SPAN;
+  // time ⇄ position in the list (piecewise linear between publications)
+  const fOf = tm => {
+    if (n === 1 || tm >= mi[0]) return (mi[0] - tm) / 12;
+    if (tm <= mi[n - 1]) return n - 1 + (mi[n - 1] - tm) / 12;
+    for (let i = 0; i < n - 1; i++) if (tm <= mi[i] && tm >= mi[i + 1]){ const sp = mi[i] - mi[i + 1] || 1; return i + (mi[i] - tm) / sp; }
+    return 0;
+  };
+  const tOf = f => {
+    if (n === 1 || f <= 0) return mi[0] - f * 12;
+    if (f >= n - 1) return mi[n - 1] - (f - (n - 1)) * 12;
+    const i = Math.floor(f), fr = f - i; return mi[i] - (mi[i] - mi[i + 1]) * fr;
+  };
+  const nearestIdx = x => { let b = 0, d = Infinity; mi.forEach((m, i) => { const dd = Math.abs(m - x); if (dd < d){ d = dd; b = i; } }); return b; };
+
+  function render(){
+    const r = clamp(rv.x, 0, 1.2);
+    const start = Math.floor(t.x - SPAN) - 1;
+    tickPool.forEach((e, k) => {
+      const m = start + k, q = proj(m);
+      if (!q){ e.style.visibility = 'hidden'; return; }
+      const yr = ((m % 12) + 12) % 12 === 0;
+      e.style.visibility = '';
+      e.className = 'mt' + (yr ? ' y' : '');
+      e.style.height = (yr ? Ht * 0.36 : Ht * 0.14) + 'px';
+      e.style.transform = `translate3d(${q.x.toFixed(2)}px,0,0) scaleY(${(r * q.c).toFixed(3)})`;
+    });
+    const y0 = Math.floor((t.x - SPAN) / 12);
+    labPool.forEach((e, k) => {
+      const Yr = y0 + k, q = proj(Yr * 12);
+      if (!q){ e.style.visibility = 'hidden'; return; }
+      e.style.visibility = '';
+      if (e.textContent !== String(Yr)) e.textContent = Yr;
+      e.style.transform = `translate3d(${q.x.toFixed(2)}px,0,0) translateX(-50%)`;
+      e.style.opacity = (clamp(r, 0, 1) * q.c).toFixed(3);
+    });
+    const idx = nearestIdx(t.x);
+    marks.forEach((b, i) => {
+      const q = proj(mi[i]);
+      if (!q){ b.style.visibility = 'hidden'; return; }
+      b.style.visibility = '';
+      b.style.transform = `translate3d(${q.x.toFixed(2)}px,0,0) scaleY(${(r * (i === idx ? 1 : 0.58) * (0.6 + 0.4 * q.c)).toFixed(3)})`;
+    });
+    // the list rolls with time: the publication under the needle sits in the middle
+    const f = fOf(t.x);
+    rows.forEach((row, i) => {
+      const d = i - f;
+      if (Math.abs(d) > 2.4){ row.style.visibility = 'hidden'; return; }
+      row.style.visibility = '';
+      row.style.transform = `translate3d(0,${(d * lh).toFixed(2)}px,0)`;
+      row.style.opacity = clamp(1 - Math.abs(d) * 0.42, 0, 1).toFixed(3);
+    });
+    const m = Math.round(t.x), txt = `${MON[((m % 12) + 12) % 12]} ${Math.floor(m / 12)}`;
+    if (ro.textContent !== txt) ro.textContent = txt;
+    if (idx !== active) select(idx);
+  }
+  t.on(render); rv.on(render);
+
+  function select(i){
+    if (active >= 0 && i !== active) buzz(5);
+    active = i;
+    rows.forEach((r, j) => { r.classList.toggle('on', j === i); r.setAttribute('aria-selected', j === i); });
+    marks.forEach((m, j) => m.classList.toggle('on', j === i));
+    tl.setAttribute('aria-valuetext', `${items[i].outlet} — ${items[i].title}, ${items[i].year}`);
+  }
+  function goTo(i, p = P.bouncy){ t.to(mi[clamp(i, 0, n - 1)], p); }
+
+  // a shared gesture for both: drag the list vertically or the timeline horizontally
+  function draggable(node, axisX){
+    let drag = null;
+    node.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      e.stopPropagation();
+      drag = { p: axisX ? e.clientX : e.clientY, x: e.clientX, y: e.clientY, t0: t.x, f0: fOf(t.x), last: axisX ? e.clientX : e.clientY, tt: performance.now(), v: 0, moved: false, scale: camScale() };
+      node.setPointerCapture(e.pointerId); node.classList.add('grabbing');
+    });
+    node.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const pos = axisX ? e.clientX : e.clientY, dp = (pos - drag.p) / drag.scale;
+      if (Math.abs(e.clientX - drag.x) > 5 || Math.abs(e.clientY - drag.y) > 5) drag.moved = true;
+      const now = performance.now(), dt = Math.max(1, now - drag.tt);
+      drag.v = 0.8 * ((pos - drag.last) / drag.scale / dt) + 0.2 * drag.v; drag.last = pos; drag.tt = now;
+      if (!drag.moved) return;
+      if (axisX) t.to(drag.t0 - dp / pxPerMonth(), P.follow);
+      else t.to(tOf(drag.f0 - dp / lh), P.follow);
+    });
+    const end = e => {
+      if (!drag) return;
+      node.classList.remove('grabbing');
+      if (document.activeElement === node) node.blur();
+      const d = drag; drag = null;
+      if (!d.moved){
+        if (!axisX){
+          const hit = e && document.elementFromPoint(e.clientX, e.clientY), row = hit && hit.closest && hit.closest('.p-pubs .row');
+          if (row) goTo(rows.indexOf(row));
+        } else if (zoomed){
+          const rect = tl.getBoundingClientRect(), x = (e.clientX - rect.left) / d.scale;
+          let best = 0, bd = Infinity;
+          mi.forEach((m, i) => { const q = proj(m); if (q){ const dd = Math.abs(q.x - x); if (dd < bd){ bd = dd; best = i; } } });
+          goTo(bd < 40 ? best : nearestIdx(t.x + (x - W / 2) / pxPerMonth()));
+        }
+        if (!zoomed) zoomIn();
+        return;
+      }
+      if (axisX) goTo(nearestIdx(t.x - (d.v * 110) / pxPerMonth()));
+      else goTo(Math.round(fOf(t.x) - (d.v * 90) / lh));
+    };
+    node.addEventListener('pointerup', end);
+    node.addEventListener('pointercancel', () => { if (drag){ drag.moved = true; end(); } });
+  }
+  draggable(tl, true); draggable(list, false);
+
+  let acc = null, snapT = 0;
+  const onWheel = e => {
+    e.preventDefault();
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    const notch = Math.abs(d) >= 50 && Number.isInteger(d);
+    if (notch){ goTo(active + Math.sign(d)); return; }
+    if (acc === null) acc = fOf(t.t);
+    acc += (e.deltaMode === 1 ? d * 16 : d) / (lh * 2.2);
+    t.to(tOf(acc), P.follow);
+    clearTimeout(snapT);
+    snapT = setTimeout(() => { goTo(Math.round(clamp(acc, 0, n - 1))); acc = null; }, 120);
+  };
+  tl.addEventListener('wheel', onWheel, { passive: false });
+  list.addEventListener('wheel', onWheel, { passive: false });
+  tl.addEventListener('keydown', e => {
+    if (!tl.matches(':focus-visible')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp'){ goTo(active - 1); e.preventDefault(); e.stopPropagation(); }   // newer
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown'){ goTo(active + 1); e.preventDefault(); e.stopPropagation(); } // older
+  });
+
+  return {
+    dims(w, ht, lineH, listH, gapAbove){
+      W = w; Ht = ht; lh = lineH;
+      list.style.height = listH + 'px';
+      rows.forEach(r => { r.style.height = lh + 'px'; r.style.lineHeight = lh + 'px'; r.style.marginTop = (-lh / 2) + 'px'; });
+      tl.style.height = (gapAbove + ht + g.pfs * 1.8) + 'px';
+      fade.style.inset = '0'; [inner, nInner].forEach(x => { x.style.top = gapAbove + 'px'; x.style.height = ht + 'px'; });
+      marks.forEach(b => { b.style.height = ht + 'px'; });
+      render(); select(nearestIdx(t.x));
+    },
+    enter(){
+      pPubs.classList.remove('revealed'); void pPubs.offsetWidth;
+      requestAnimationFrame(() => pPubs.classList.add('revealed'));
+      const a = active < 0 ? 0 : active;
+      rv.jump(0); t.jump(mi[a] - 9);
+      pubT.after(140, () => { rv.to(1, P.bouncy); t.to(mi[a], P.soft); });
+    },
+    exit(){ pPubs.classList.remove('revealed'); },
+  };
+}
+function layoutPubs(){
+  const pfs = g.pfs, lh = Math.round(pfs * 1.3 * 100) / 100;
+  const listH = lh * 3;                    // the active one, with a neighbour fading on each side
+  const readout = pfs * 1.5, breath = pfs * 1.1;
+  if (!g.compact){
+    const w = clamp(Math.max(ratios.pub * pfs, 15 * pfs), 0, g.side);
+    const gap = 0.32 * g.fs;
+    const band = g.capH;                   // everything lives between the cap line and the baseline
+    const ht = Math.max(pfs * 1.6, band - listH - breath - readout);
+    pPubs.style.width = w + 'px';
+    pPubs.style.left = (g.mL - gap - w) + 'px';
+    pPubs.style.top = g.capTop + 'px';
+    pPubs.style.height = (band + pfs * 1.8) + 'px';
+    timeline.dims(w, ht, lh, listH, breath + readout);
+    pubs.dir = [1, 0];
+    pubs.box = () => nodeBox(pPubs, pfs * 2.2, 0);
+  } else {
+    const w = g.panelW, ht = pfs * 3;
+    pPubs.style.width = w + 'px';
+    pPubs.style.left = (-w / 2) + 'px';
+    pPubs.style.top = (0.68 * g.fs) + 'px';
+    pPubs.style.height = (pfs * 2.05 + listH + breath + readout + ht + pfs * 1.8) + 'px';
+    timeline.dims(w, ht, lh, listH, breath + readout);
+    pubs.dir = [0, -1];
+    pubs.box = () => nodeBox(pPubs);
+  }
+}
+
+/* =====================================================================
+   Camera — zooming is leaning in: same drawing, closer.
+   While moving it is a transform; at rest the page is re-laid out at
+   the new size so everything is rendered natively and stays crisp.
+   ===================================================================== */
+let PANELS = [null];
+const C = { s: new Spring(1, 0.0002), x: new Spring(0, 0.05), y: new Spring(0, 0.05) };
+const camTarget = { s: 1 };
+let zoomed = false, committing = false;
+const camScale = () => C.s.x / Z;
+function renderCam(){
+  const moving = C.s.moving || C.x.moving || C.y.moving;
+  if (!moving && !committing && Math.abs(C.s.x - Z) > 1e-4 && zoomed) return commitZoom();
+  const sc = C.s.x / Z;
+  world.style.transform = `translate3d(${C.x.x.toFixed(2)}px,${C.y.x.toFixed(2)}px,0) scale(${sc.toFixed(5)})`;
+  world.style.setProperty('--zs', sc.toFixed(5));
+  world.style.willChange = moving ? 'transform' : 'auto';
+}
+Object.values(C).forEach(s => s.on(renderCam));
+function commitZoom(){            // transform → real layout
+  committing = true;
+  stopAllFlaps();
+  Z = C.s.x; layout();
+  committing = false;
+  renderCam();
+}
+function uncommitZoom(){          // real layout → transform (seamless), before the camera moves
+  if (Z === 1) return;
+  committing = true;
+  stopAllFlaps();
+  Z = 1; layout();
+  committing = false;
+  renderCam();
+}
+function aimCamera(instant){
+  const p = PANELS[state];
+  let s = 1, x = 0, y = 0;
+  if (zoomed && p){
+    const b0 = p.box(), b = { x: b0.x / Z, y: b0.y / Z, w: b0.w / Z, h: b0.h / Z };
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const maxS = g.compact ? 1.9 : 2.5;
+    s = clamp(Math.min((vw * (g.compact ? 0.92 : 0.74)) / b.w, (vh * 0.66) / b.h), 1, maxS);
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2 + S.rigY.t;
+    x = -s * cx; y = -s * cy;
+  }
+  camTarget.s = s;
+  if (!instant) uncommitZoom();
+  const f = instant ? 'jump' : 'to';
+  C.s[f](s, P.cam); C.x[f](x, P.cam); C.y[f](y, P.cam);
+}
+function zoomIn(){
+  if (zoomed || !PANELS[state]) return;
+  zoomed = true;
+  document.documentElement.classList.add('zoomed');
+  aimCamera(false); buzz(6);
+  if (state === 3) relabelAbout(true);   // cm → mm
+  live.textContent = NAMES[state] + ', zoomed in';
+}
+function zoomOut(){
+  if (!zoomed) return;
+  zoomed = false;
+  document.documentElement.classList.remove('zoomed');
+  aimCamera(false);
+  if (state === 3) relabelAbout(true);   // mm → cm
+  live.textContent = NAMES[state];
+}
+
+/* =====================================================================
+   Section state machine
+   ===================================================================== */
+const NAMES = ['MAO', 'Contact', 'Projects', 'About', 'Publications'];
+let state = 0;
+function go(to){
+  to = ((to % 5) + 5) % 5;
+  if (to === state) return;
+  if (zoomed){ zoomed = false; document.documentElement.classList.remove('zoomed'); aimCamera(false); relabelAbout(false); }
+  const from = state; state = to;
+  setSymbol(from, to);
+  if (PANELS[from]) hidePanel(PANELS[from]);
+  if (PANELS[to]) showPanel(PANELS[to]);
+  live.textContent = NAMES[to];
+  wm.setAttribute('aria-label', `MAO — ${NAMES[to]}. Show next section`);
+  buzz(9);
+  placeRig(false);
+}
+/* Keep wordmark + active panel inside the viewport (computed at 1×, applied ×Z) */
+function placeRig(instant){
+  const vh = window.innerHeight, p = PANELS[state];
+  let top = -g.H / 2 / Z, bottom = g.H / 2 / Z;
+  if (p){ const b = p.box(); top = Math.min(top, b.y / Z); bottom = Math.max(bottom, (b.y + b.h) / Z); }
+  const safeTop = -vh / 2 + 28, safeBottom = vh / 2 - 64;
+  let y = 0;
+  if (g.compact && p) y = -(top + bottom) / 2;
+  if (top + y < safeTop) y = safeTop - top;
+  if (bottom + y > safeBottom) y = Math.max(safeBottom - bottom, safeTop - top);
+  if (instant) S.rigY.jump(y); else S.rigY.to(y, P.soft);
+}
+
+/* =====================================================================
+   Input — the left quarter goes back, the rest goes forward;
+   a section's own content zooms in, anything else zooms out.
+   ===================================================================== */
+const BACK_ZONE = 0.25;
+let ptr = null;
+stage.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || e.target.closest('.wheel, .tl, .p-pubs .list')) return;
+  const inPanel = !!e.target.closest('.panel.on'), link = !!e.target.closest('a, button.cal');
+  ptr = { x: e.clientX, y: e.clientY, id: e.pointerId, t: performance.now(), lock: null, vx: 0, lx: e.clientX, lt: performance.now(), inPanel, link };
+  if (!inPanel && !zoomed){
+    const dir = e.clientX < window.innerWidth * BACK_ZONE ? -1 : 1;   // lean the way you're going
+    S.press.to(0.96, P.press); S.dragX.to(dir * 5, P.press); S.nudge.to(dir * 4, P.press);
+  }
+});
+stage.addEventListener('pointermove', e => {
+  if (!ptr || e.pointerId !== ptr.id) return;
+  const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y;
+  if (!ptr.lock){
+    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2){ ptr.lock = 'x'; try { stage.setPointerCapture(e.pointerId); } catch (_) {} S.press.to(1, P.release); }
+    else if (Math.abs(dy) > 12){ ptr.lock = 'y'; release(); }
+  }
+  if (ptr.lock === 'x'){
+    const now = performance.now(), dt = Math.max(1, now - ptr.lt);
+    ptr.vx = 0.8 * ((e.clientX - ptr.lx) / dt) + 0.2 * ptr.vx; ptr.lx = e.clientX; ptr.lt = now;
+    S.dragX.to(70 * Math.tanh(dx / 280), P.follow);
+    S.nudge.to(clamp(dx * 0.12, -40, 40), P.follow);
+  }
+});
+function release(){ S.press.to(1, P.release); S.dragX.to(0, P.release); S.nudge.to(0, P.bouncy); }
+stage.addEventListener('pointerup', e => {
+  if (!ptr || e.pointerId !== ptr.id) return;
+  const p = ptr; ptr = null;
+  release();
+  if (p.lock === 'x'){
+    const dx = e.clientX - p.x;
+    if (Math.abs(dx) > 60 || Math.abs(p.vx) > 0.45) go(state + (dx < 0 ? 1 : -1));
+    return;
+  }
+  if (p.lock === 'y' || performance.now() - p.t > 700) return;
+  if (p.link) return;
+  if (p.inPanel){ if (!zoomed) zoomIn(); return; }
+  if (zoomed){ zoomOut(); return; }
+  go(state + (e.clientX < window.innerWidth * BACK_ZONE ? -1 : 1));
+});
+stage.addEventListener('pointercancel', () => { ptr = null; release(); });
+
+wm.addEventListener('click', e => { if (e.detail === 0){ go(state + 1); pulse(); } });
+window.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || !$('calib').hidden) return;
+  if (e.key === 'ArrowRight'){ go(state + 1); pulse(); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft'){ go(state - 1); pulse(); e.preventDefault(); }
+  else if (e.key === 'Escape'){ zoomed ? zoomOut() : go(0); }
+  else if ((e.key === 'z' || e.key === 'Z') && PANELS[state]){ zoomed ? zoomOut() : zoomIn(); }
+});
+function pulse(){ S.press.to(0.965, P.press); setTimeout(() => S.press.to(1, P.release), 70); }
+
+wm.addEventListener('pointerenter', () => { if (state === 0 && mqFine.matches && !REDUCED){ S.open.to(0.12, P.soft); S.ast.to(0.85, P.soft); } });
+wm.addEventListener('pointerleave', () => { if (state === 0 && mqFine.matches){ S.open.to(0, P.soft); S.ast.to(1, P.soft); } });
+
+/* =====================================================================
+   Calibration — a bank card (ISO/IEC 7810 ID-1: 85.60 × 53.98 mm,
+   corner radius 3.18 mm) is the one ruler everyone carries.
+   ===================================================================== */
+const calib = $('calib'), calCard = $('calCard'), calEdge = $('calEdge'), calRead = $('calRead');
+const CARD_W = 85.6, CARD_H = 53.98, CARD_R = 3.18;
+let CW = CARD_W, CH = CARD_H;   // swapped when the card has to stand upright (phones)
+const cw = new Spring(300, 0.01), cIn = new Spring(0, 0.001);
+let calX0 = 0, calY0 = 0, calDims = null, lastPx = 0;
+function makeCalDim(orient){ const d = el('div', 'dm ' + orient); d._side = -1; calib.append(d); return d; }
+function renderCal(){
+  const w = cw.x, h = w * CH / CW, k = clamp(cIn.x, 0, 1.1);
+  Object.assign(calCard.style, { left: calX0 + 'px', top: calY0 + 'px', width: w + 'px', height: h + 'px', borderRadius: (w * CARD_R / CW) + 'px',
+    opacity: clamp(k, 0, 1), transform: `scale(${(0.97 + 0.03 * k).toFixed(4)})`, transformOrigin: '0 0' });
+  Object.assign(calEdge.style, { left: (calX0 + w) + 'px', top: calY0 + 'px', height: h + 'px', opacity: clamp(k, 0, 1) });
+  // its own dimensions, drawn like the rest of the site
+  const SL = 10, place = (d, pts, at, text) => {
+    const horiz = d.classList.contains('h');
+    if (!d._built){ d.innerHTML = '<div class="ln"></div><div class="tk"></div><div class="sl"></div><div class="tk"></div><div class="sl"></div><div class="lb"></div>'; d._built = true; }
+    const [ln] = d.getElementsByClassName('ln'), tks = d.getElementsByClassName('tk'), sls = d.getElementsByClassName('sl'), lb = d.getElementsByClassName('lb')[0];
+    const a = pts[0], b = pts[1];
+    if (horiz) Object.assign(ln.style, { left: a + 'px', top: at + 'px', width: (b - a) + 'px' });
+    else Object.assign(ln.style, { left: at + 'px', top: a + 'px', height: (b - a) + 'px' });
+    [a, b].forEach((p, i) => {
+      const x = horiz ? p : at, y = horiz ? at : p;
+      Object.assign(tks[i].style, { left: x + 'px', top: y + 'px', [horiz ? 'height' : 'width']: SL + 'px' });
+      Object.assign(sls[i].style, { left: x + 'px', top: y + 'px', width: SL + 'px' });
+    });
+    lb.textContent = text;
+    Object.assign(lb.style, { left: (horiz ? (a + b) / 2 : at) + 'px', top: (horiz ? at : (a + b) / 2) + 'px', transform: horiz ? 'translate(-50%,-50%)' : 'translate(-50%,-50%) rotate(-90deg)' });
+    d.style.opacity = clamp(k, 0, 1);
+  };
+  place(calDims.w, [calX0, calX0 + w], calY0 - 26, CW.toFixed(1) + ' mm');
+  place(calDims.h, [calY0, calY0 + h], calX0 - 26, CH.toFixed(1) + ' mm');
+  const pxmm = w / CW;
+  calRead.innerHTML = `1 mm = <b>${pxmm.toFixed(2)}</b> px`;
+  Object.assign(calRead.style, { left: (calX0 + w / 2) + 'px', top: (calY0 + h + 22) + 'px', opacity: clamp(k, 0, 1) });
+  const px = Math.round(w); if (px !== lastPx){ if (lastPx) buzz(2); lastPx = px; }
+}
+cw.on(renderCal); cIn.on(renderCal);
+function openCalib(){
+  if (!calDims){ calDims = { w: makeCalDim('h'), h: makeCalDim('v') }; }
+  const upright = CARD_W / MM.v > window.innerWidth - 100;
+  CW = upright ? CARD_H : CARD_W; CH = upright ? CARD_W : CARD_H;
+  const w = CW / MM.v, h = w * CH / CW;
+  calX0 = Math.round(Math.max(44, (window.innerWidth - w) / 2));
+  calY0 = Math.round(Math.max(130, (window.innerHeight - h) / 2 - 20));
+  cw.jump(w); cIn.jump(0); lastPx = Math.round(w);
+  calib.hidden = false;
+  requestAnimationFrame(() => { calib.classList.add('on'); cIn.to(1, P.release); });
+}
+function closeCalib(save){
+  if (save){
+    MM = { v: CW / cw.t, calibrated: true }; store.set(CAL_KEY, MM.v.toFixed(5));
+    calCard.classList.add('flash'); buzz(12);
+    setTimeout(() => { calCard.classList.remove('flash'); hideCal(); relabelAbout(true); }, 320);
+  } else hideCal();
+}
+function hideCal(){ calib.classList.remove('on'); cIn.to(0, P.exit); setTimeout(() => { calib.hidden = true; }, 300); }
+// drag anywhere; the further you move away from the card vertically, the finer the control
+let cd = null;
+calib.addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  cd = { x: e.clientX, w: cw.t }; calib.setPointerCapture(e.pointerId);
+});
+calib.addEventListener('pointermove', e => {
+  if (!cd) return;
+  const h = cw.t * CH / CW, cy = calY0 + h / 2;
+  const dist = Math.max(0, Math.abs(e.clientY - cy) - h / 2);
+  const precision = 1 / (1 + dist / 90);
+  cd.w = clamp(cd.w + (e.clientX - cd.x) * precision, 120, window.innerWidth - calX0 - 4);
+  cd.x = e.clientX;
+  cw.to(cd.w, P.follow);
+});
+calib.addEventListener('pointerup', () => { cd = null; });
+calib.addEventListener('wheel', e => { e.preventDefault(); cw.to(clamp(cw.t - (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * 0.05, 120, window.innerWidth - calX0 - 4), P.snap); }, { passive: false });
+window.addEventListener('keydown', e => {
+  if (calib.hidden) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp'){ cw.to(cw.t + (e.shiftKey ? 2 : 0.25), P.snap); e.preventDefault(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowDown'){ cw.to(cw.t - (e.shiftKey ? 2 : 0.25), P.snap); e.preventDefault(); }
+  if (e.key === 'Enter'){ closeCalib(true); e.preventDefault(); }
+  if (e.key === 'Escape'){ closeCalib(false); e.preventDefault(); }
+});
+$('calOk').addEventListener('click', () => closeCalib(true));
+$('calCancel').addEventListener('click', () => closeCalib(false));
+$('calReset').addEventListener('click', () => { store.set(CAL_KEY, null); MM = estimateMmPerPx(); cw.to(CW / MM.v, P.bouncy); relabelAbout(true); });
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+let resizeRaf = 0;
+function onResize(){
+  cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    MM = estimateMmPerPx();
+    Z = 1; layout();
+    if (zoomed) aimCamera(true);
+  });
+}
+async function boot(){
+  const [content] = await Promise.all([
+    loadContent(),
+    Promise.race([
+      Promise.all(['900 100px', '400 16px', '500 16px', '700 16px'].map(f => document.fonts.load(f + ' "Inter Tight"'))).catch(() => {}),
+      new Promise(r => setTimeout(r, 2500)),
+    ]),
+  ]);
+  CONTENT = content;
+  buildContact(); buildAbout();
+  wheel = makeWheel(); projects = makePanel(pProjects, { enter: () => wheel.enter() });
+  timeline = makeTimeline(); pubs = makePanel(pPubs, { enter: () => timeline.enter(), exit: () => { pubT.clear(); timeline.exit(); } });
+  PANELS = [null, contact, projects, about, pubs];
+  layout();
+  S.press.jump(0.92); S.ast.jump(0);
+  document.body.classList.remove('loading');
+  requestAnimationFrame(() => { S.press.to(1, P.release); S.ast.to(1, P.bouncy); });
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+  document.fonts && document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', () => { ratios = null; metricCache.clear(); onResize(); });
+  mqFine.addEventListener && mqFine.addEventListener('change', onResize);
+}
+boot();
+
+window.__mao = { go: i => go(i), zoomIn, zoomOut, openCalib, get state(){ return state; }, get zoomed(){ return zoomed; }, get Z(){ return Z; }, g, get MM(){ return MM; } };
+})();
+</script>
+</body>
+</html>
