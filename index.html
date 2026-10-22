@@ -289,6 +289,8 @@ const FALLBACK = {
 let CONTENT = null;
 const pad2 = i => String(i + 1).padStart(2, '0');
 const str = v => (v == null ? '' : String(v)).trim();
+// a project number set in the CMS wins; a single digit gets its leading zero (7 → 07); empty = automatic
+const projNum = (v, i) => { const s = str(v); return !s ? pad2(i) : /^\d$/.test(s) ? '0' + s : s; };
 function normalize(c){
   c = c || {};
   const ct = c.contact || {};
@@ -296,7 +298,7 @@ function normalize(c){
     label: str(o.label), phone: str(o.phone), place: str(o.place), map: str(o.map) || str(o.place),
   }));
   const projects = (Array.isArray(c.projects) ? c.projects : []).filter(p => p && str(p.title))
-    .map((p, i) => ({ n: pad2(i), title: str(p.title), type: str(p.type), place: str(p.place), year: str(p.year) }));
+    .map((p, i) => ({ n: projNum(p.number, i), title: str(p.title), type: str(p.type), place: str(p.place), year: str(p.year) }));
   const about = (Array.isArray(c.about) ? c.about : []).map(a => str(typeof a === 'object' && a ? a.text : a)).filter(Boolean);
   const publications = (Array.isArray(c.publications) ? c.publications : []).filter(p => p && str(p.title || p.outlet))
     .map(p => ({ outlet: str(p.outlet), title: str(p.title), year: parseInt(p.year, 10) || new Date().getFullYear(), month: clamp(parseInt(p.month, 10) || 1, 1, 12) }))
