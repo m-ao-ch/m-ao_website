@@ -1,24 +1,80 @@
 {
+  "projects": [
+    {
+      "number": "103",
+      "title": "Piazza A. Manzoni",
+      "type": "Public space / Renewal",
+      "place": "IT / Cavenzano",
+      "year": "2024"
+    },
+    {
+      "number": "104",
+      "title": "Minusian Villa",
+      "type": "Private house / Renovation",
+      "place": "CH / Minusio ",
+      "year": "2026"
+    },
+    {
+      "number": "106",
+      "title": "Rinascente 3",
+      "type": "Healthcare / Conversion",
+      "place": "CH / Locarno ",
+      "year": "2026"
+    },
+    {
+      "number": "108 ",
+      "title": "Casa a Ceroglie",
+      "type": "Private house / Renewal & extension ",
+      "place": "IT / Ceroglie",
+      "year": "2026"
+    },
+    {
+      "number": "115",
+      "title": "Office in Morcote",
+      "type": "Office / Interior",
+      "place": "CH / Morcote",
+      "year": "2026"
+    },
+    {
+      "number": "116",
+      "title": "Attic in Milano",
+      "type": "Private House / Expansion",
+      "place": "IT / Milano",
+      "year": "2026"
+    }
+  ],
+  "publications": [
+    {
+      "outlet": "Electa",
+      "title": "Terræ Aquæ, 2. L’Italia e l’Intelligenza del Mare. Progetti, ricerche, visioni",
+      "year": 2025,
+      "month": 6
+    },
+    {
+      "outlet": "Biennale Architettura 2025",
+      "title": "Vuoto Pieno",
+      "year": 2025,
+      "month": 6
+    }
+  ],
+  "about": [
+    "Founded in 2026 in Zurich, operating between Switzerland and Italy in the fields of architecture, urbanism, and research. "
+  ],
   "contact": {
     "email": "info@m-ao.ch",
     "offices": [
-      { "label": "Swiss office:", "phone": "+41 76 799 34 44", "place": "Locarno – TI – CH", "map": "Locarno, Switzerland" },
-      { "label": "Italian office:", "phone": "+39 348 649 2501", "place": "Cavenzano – FVG – IT", "map": "Cavenzano, Udine, Italy" }
+      {
+        "label": "Swiss office:",
+        "phone": "+41 76 799 34 44",
+        "place": "Locarno – TI – CH",
+        "map": "Locarno, Switzerland"
+      },
+      {
+        "label": "Italian office:",
+        "phone": "+39 348 649 2501",
+        "place": "Cavenzano – FVG – IT",
+        "map": "Cavenzano, Udine, Italy"
+      }
     ]
-  },
-  "projects": [
-    { "title": "Notation", "type": "Generative Typography", "place": "Locarno", "year": "2025" },
-    { "title": "Fieldwork", "type": "Data Sculpture", "place": "Udine", "year": "2024" },
-    { "title": "Low Orbit", "type": "Installation", "place": "Zurich", "year": "2024" },
-    { "title": "Common Ground", "type": "Public Design Study", "place": "Milan", "year": "2023" }
-  ],
-  "about": [
-    "MAO works at the edge of language, mathematics, and image — treating the wordmark as an operator rather than a label.",
-    "Each symbol between the letters is a function: add, multiply, subtract, divide. The site performs the same logic it describes."
-  ],
-  "publications": [
-    { "outlet": "Journal of Applied Form", "title": "On Operators", "year": 2025, "month": 4 },
-    { "outlet": "Design Quarterly", "title": "Symbol as Interface", "year": 2024, "month": 10 },
-    { "outlet": "Self-published", "title": "Reading the Wordmark", "year": 2023, "month": 6 }
-  ]
+  }
 }
