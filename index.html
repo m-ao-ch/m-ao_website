@@ -3,13 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- SITE-HEAD:START — written automatically from content.json ("Site" in Pages CMS) on every publish -->
 <title>MAO — Architecture office</title>
-<meta name="description" content="MAO — architecture office between Locarno (CH) and Cavenzano (IT).">
-<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Architecture office between Locarno (CH) and Cavenzano (IT).">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://www.m-ao.ch/">
 <meta property="og:title" content="MAO — Architecture office">
 <meta property="og:description" content="Architecture office between Locarno (CH) and Cavenzano (IT).">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fff'/%3E%3Cpath d='M13.3 6h5.4v20h-5.4zM6 13.3h20v5.4H6z' fill='%23e10600'/%3E%3C/svg%3E">
+<meta property="og:image" content="https://www.m-ao.ch/media/preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="media/icon.png">
+<link rel="apple-touch-icon" href="media/icon.png">
+<!-- SITE-HEAD:END -->
+<meta name="theme-color" content="#ffffff">
 <link rel="preload" href="fonts/InterTight-900.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/InterTight-400.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -17,6 +25,7 @@
   @font-face{font-family:"Inter Tight";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/InterTight-400.woff2) format("woff2");}
   @font-face{font-family:"Inter Tight";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/InterTight-500.woff2) format("woff2");}
   @font-face{font-family:"Inter Tight";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/InterTight-700.woff2) format("woff2");}
+  @font-face{font-family:"Inter Tight";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/InterTight-800.woff2) format("woff2");}
   @font-face{font-family:"Inter Tight";font-style:normal;font-weight:900;font-display:swap;src:url(fonts/InterTight-900.woff2) format("woff2");}
 
   :root{
@@ -57,7 +66,7 @@
   .wordmark{
     position:absolute;left:0;top:0;display:flex;align-items:baseline;
     margin:0;padding:0;border:0;background:none;
-    font-family:var(--sans);font-weight:900;font-size:var(--fs);
+    font-family:var(--sans);font-weight:var(--wmw,900);font-size:var(--fs);
     line-height:1;letter-spacing:-0.035em;color:var(--ink);white-space:nowrap;cursor:inherit;
     touch-action:manipulation;transform-origin:50% 55%;
   }
@@ -69,7 +78,7 @@
   /* one stroke weight for every bar; length in Swiss-cross proportion (arms 7:6) */
   .bar{position:absolute;left:0;top:0;width:0.567em;height:0.17em;background:var(--red);}
   .dot{position:absolute;left:0;top:0;width:0.19em;height:0.19em;border-radius:50%;background:var(--red);}
-  .ast{position:absolute;left:0;top:0;display:block;color:var(--red);font-size:0.85em;line-height:1;font-weight:900;
+  .ast{position:absolute;left:0;top:0;display:block;color:var(--red);font-size:0.85em;line-height:1;font-weight:inherit;
        pointer-events:none;transform-origin:30% 30%;}
 
   /* ---------- Panels ---------- */
@@ -99,15 +108,15 @@
 
   /* ---------- × Projects: wheel ---------- */
   .p-projects .head{position:absolute;left:0;bottom:100%;margin-bottom:0.6em;}
-  .wheel{position:relative;width:100%;height:100%;outline:none;cursor:grab;touch-action:none;perspective:70em;
+  .wheel{position:relative;width:100%;height:100%;outline:none;cursor:grab;touch-action:none;
          -webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);
                  mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);}
   .wheel.grabbing{cursor:grabbing;}
   .wheel .ruler{position:absolute;left:0;top:0;bottom:0;width:1.4em;}
-  .wheel .tick{position:absolute;left:0;top:50%;height:var(--hair);background:var(--grey);}
+  .wheel .tick{position:absolute;left:0;top:50%;height:var(--hair);background:var(--grey);transform-origin:0 50%;backface-visibility:hidden;}
   .wheel .tick.major{background:var(--ink);}
   .wheel .needle{position:absolute;left:-0.4em;top:50%;width:1.75em;height:calc(1.5 * var(--px));transform:translateY(-50%);background:var(--red);}
-  .wheel .rows{position:absolute;left:2.35em;right:0;top:0;bottom:0;transform-style:preserve-3d;}
+  .wheel .rows{position:absolute;left:2.35em;right:0;top:0;bottom:0;}
   .wheel .row{position:absolute;left:0;top:50%;white-space:nowrap;cursor:pointer;backface-visibility:hidden;transform-origin:0 50%;}
   .wheel .row.on{cursor:inherit;}
   .wheel .row .num{transition:color 200ms ease;}
@@ -304,7 +313,12 @@ function normalize(c){
     .map(p => ({ outlet: str(p.outlet), title: str(p.title), year: parseInt(p.year, 10) || new Date().getFullYear(), month: clamp(parseInt(p.month, 10) || 1, 1, 12) }))
     .sort((a, b) => (b.year * 12 + b.month) - (a.year * 12 + a.month))   // newest first
     .map((p, i) => ({ ...p, n: pad2(i) }));
-  return { contact: { email: str(ct.email), offices }, projects, about, publications };
+  const st = c.site || {};
+  const wt = parseInt(st.wordmarkWeight, 10), sz = parseFloat(st.wordmarkSize);
+  const site = { title: str(st.title), icon: str(st.icon),
+    weight: [700, 800, 900].includes(wt) ? wt : 900,
+    size: sz > 0 ? clamp(sz / 100, 0.7, 1.2) : 1 };
+  return { site, contact: { email: str(ct.email), offices }, projects, about, publications };
 }
 async function loadContent(){
   try {
@@ -492,20 +506,36 @@ const g = { fs: 160, pfs: 13, gap: 100, compact: false };
 let Z = 1;
 const canvas = document.createElement('canvas').getContext('2d');
 let ratios = null;
-const GAP = 0.70, BAR = 0.567;
+/* The wordmark's weight and size come from "Site" in Pages CMS. The operator is drawn from the
+   weight's own stem: bar = 0.863 × stem, length in Swiss-cross proportion (arms 7:6), dots and
+   spacing scale with it — so a lighter MAO gets a lighter +, ×, −, ÷ in the same proportions. */
+const WM = { weight: 900, size: 1 };
+let GAP = 0.70;                                   // operator slot in em, recomputed per weight
+function stemOf(weight){
+  canvas.font = fontStr(weight, 1000);
+  const I = canvas.measureText('I');
+  return I.actualBoundingBoxRight + I.actualBoundingBoxLeft;
+}
+function opEm(){                                  // operator measures in em for the current weight
+  // Black is the reference (bar 0.17em, length 0.567em, slot 0.70em); other weights scale from its stem
+  const k = WM.weight === 900 ? 1 : stemOf(WM.weight) / stemOf(900);
+  const t = 0.17 * k, L = 0.567 * k;
+  return { t, L, dot: 0.19 * k, off: 0.255 * k, gap: L + 0.133 };
+}
 
 function fontStr(weight, px){ return `${weight} ${px}px ${getComputedStyle(wm).fontFamily}`; }
 /* Glyph metrics measured at 1000px and scaled — canvas rounds metrics to whole pixels,
    which at 176px would put a dimension's end up to a pixel off the letter. */
 const metricCache = new Map();
 function glyph(ch, px){
-  let m = metricCache.get(ch);
+  const key = WM.weight + ch;
+  let m = metricCache.get(key);
   if (!m){
-    canvas.font = fontStr(900, 1000);
+    canvas.font = fontStr(WM.weight, 1000);
     const t = canvas.measureText(ch);
     m = { w: t.width, l: t.actualBoundingBoxLeft, r: t.actualBoundingBoxRight, a: t.actualBoundingBoxAscent, d: t.actualBoundingBoxDescent,
           fa: t.fontBoundingBoxAscent, fd: t.fontBoundingBoxDescent };
-    metricCache.set(ch, m);
+    metricCache.set(key, m);
   }
   const k = px / 1000;
   return { width: m.w * k, actualBoundingBoxLeft: m.l * k, actualBoundingBoxRight: m.r * k, actualBoundingBoxAscent: m.a * k, actualBoundingBoxDescent: m.d * k,
@@ -516,6 +546,7 @@ const pubHTML = p => `<span class="num l">${esc(p.n)} – </span>${[p.outlet, p.
 
 function measureRatios(){
   document.documentElement.style.setProperty('--fs', '100px');
+  GAP = opEm().gap;
   const r = { W0: (glyph('M', 100).width + glyph('A', 100).width + glyph('O', 100).width - 0.035 * 300) / 100 };
   r.capH = glyph('H', 100).actualBoundingBoxAscent / 100;
   const probeEl = el('div'); probeEl.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:100px;left:-9999px;top:0';
@@ -529,9 +560,10 @@ function measureRatios(){
 
 function fitDesktop(vw, vh){
   const r = ratios, open = r.W0 + GAP;
-  let fs = Math.min(176, vw * 0.15, vh * 0.26);
-  for (; fs >= 96; fs -= 2){
-    const pfs = clamp(fs * 0.072, 10, 13.6);
+  const k = WM.size;
+  let fs = Math.min(176, vw * 0.15, vh * 0.26) * k;
+  for (; fs >= 96 * k; fs -= 2){
+    const pfs = clamp(fs / k * 0.072, 10, 13.6);
     const side = (vw - open * fs) / 2 - 0.32 * fs - 32;
     const need = Math.max(r.proj * pfs + 34, r.pub * pfs, 15 * pfs);
     if (side >= need && (r.capH * fs) >= pfs * 1.6 * 4.2) return { fs, pfs, side };
@@ -549,8 +581,8 @@ function layout(){
   if (fit){ fs = fit.fs; pfs = fit.pfs; g.side = fit.side * Z; }
   else {
     const open = ratios.W0 + GAP;
-    fs = clamp(Math.min((vw * 0.80) / open, vh * 0.2), 48, 150);
-    pfs = clamp(fs * 0.105, 12, 15);
+    fs = clamp(Math.min((vw * 0.80) / open, vh * 0.2), 48, 150) * WM.size;
+    pfs = clamp(fs / WM.size * 0.105, 12, 15);
   }
   g.fs = fs * Z; g.pfs = pfs * Z; g.panelW = Math.min(vw - 32, 460) * Z;
   const root = document.documentElement.style;
@@ -564,7 +596,10 @@ function layout(){
   const ls = -0.035 * fs;
   const xM = 0, xA = mM.width + ls, xO = xA + mA.width + ls, wO = mO.width + ls;
   const W0 = xO + wO, H = fs;
-  g.W0 = W0; g.H = H; g.gap = GAP * fs;
+  const op = opEm();
+  g.W0 = W0; g.H = H; g.gap = op.gap * fs; g.dotOff = op.off * fs;
+  [barA, barB].forEach(b => { b.style.width = (op.L * fs) + 'px'; b.style.height = (op.t * fs) + 'px'; });
+  [dotT, dotB].forEach(d => { d.style.width = d.style.height = (op.dot * fs) + 'px'; });
   const ox = -W0 / 2, oy = -H / 2;
   wm.style.left = ox + 'px'; wm.style.top = oy + 'px';
   const capH = mH.actualBoundingBoxAscent;
@@ -619,7 +654,7 @@ function renderWM(){
   barA.style.transform = `${base} rotate(${(S.rotA.x + nd).toFixed(2)}deg) scaleX(${L.toFixed(4)})`;
   barB.style.transform = `${base} rotate(${(S.rotB.x + nd).toFixed(2)}deg) scaleX(${L.toFixed(4)})`;
   barA.style.opacity = barB.style.opacity = vis;
-  const d = Math.max(0, S.dots.x), dy = d * 0.255 * g.fs, ds = clamp(d, 0, 1.25);
+  const d = Math.max(0, S.dots.x), dy = d * g.dotOff, ds = clamp(d, 0, 1.25);
   dotT.style.transform = `translate3d(${g.cx.toFixed(2)}px,${(g.cy - dy).toFixed(2)}px,0) translate(-50%,-50%) scale(${ds.toFixed(3)})`;
   dotB.style.transform = `translate3d(${g.cx.toFixed(2)}px,${(g.cy + dy).toFixed(2)}px,0) translate(-50%,-50%) scale(${ds.toFixed(3)})`;
   dotT.style.opacity = dotB.style.opacity = vis;
@@ -744,14 +779,22 @@ function makeWheel(){
   let H = 100, rowH = 20, th = 0.4, R = 50, active = -1;
   function dims(h, rh){
     H = h; rowH = rh; R = H / 2;
-    th = Math.min(0.55, (rowH / R) * 1.05);
+    th = Math.min(0.6, (rowH / R) * 1.12);
     rows.forEach(r => { r.style.height = rowH + 'px'; r.style.lineHeight = rowH + 'px'; r.style.marginTop = (-rowH / 2) + 'px'; });
     render();
   }
+  /* Every row sits on the surface of a drum of radius R, seen from a distance of PERSP·R.
+     The projection is computed here and applied as a plain 2D transform: rows recede (smaller),
+     turn away (flatter) and stay aligned on the ruler — no skew, and nothing for a browser
+     to flatten (Safari drops nested 3D easily). */
+  const PERSP = 3;
   function project(f){
     const a = (f - s.x) * th;
-    if (Math.abs(a) >= Math.PI / 2) return null;
-    return { y: R * Math.sin(a), c: Math.cos(a), a };
+    if (Math.abs(a) >= Math.PI * 0.46) return null;
+    const c = Math.cos(a), D = R * PERSP;
+    const k = D / (D + R * (1 - c));            // depth: further = smaller
+    const y = R * Math.sin(a) * k;              // projected height on the drum
+    return { c, a, t: `translate3d(0,${y.toFixed(2)}px,0) scale(${k.toFixed(4)},${(k * c).toFixed(4)})` };
   }
   function render(){
     rows.forEach((r, i) => {
@@ -759,14 +802,14 @@ function makeWheel(){
       if (!q){ r.style.visibility = 'hidden'; return; }
       r.style.visibility = '';
       const near = 1 - Math.min(1, Math.abs(i - s.x));
-      r.style.transform = `translate3d(0,${q.y.toFixed(2)}px,0) rotateX(${(-q.a * 57.2958).toFixed(2)}deg)`;
-      r.style.opacity = (Math.pow(q.c, 1.4) * (0.42 + 0.58 * near)).toFixed(3);
+      r.style.transform = q.t;
+      r.style.opacity = (Math.pow(q.c, 1.6) * (0.4 + 0.6 * near)).toFixed(3);
     });
     ticks.forEach(({ t, f }) => {
       const q = project(f);
       if (!q){ t.style.visibility = 'hidden'; return; }
       t.style.visibility = '';
-      t.style.transform = `translate3d(0,${q.y.toFixed(2)}px,0)`;
+      t.style.transform = q.t;
       t.style.opacity = (q.c * q.c).toFixed(3);
     });
     const idx = clamp(Math.round(s.x), 0, n - 1);
@@ -803,8 +846,9 @@ function makeWheel(){
     const d = drag; drag = null;
     if (!d.moved){
       const hit = e && document.elementFromPoint(e.clientX, e.clientY), row = hit && hit.closest && hit.closest('.wheel .row');
-      if (row) set(rows.indexOf(row));
-      if (!zoomed) zoomIn();
+      const i = row ? rows.indexOf(row) : -1;
+      if (i >= 0 && i !== active){ set(i); if (!zoomed) zoomIn(); return; }
+      zoomed ? zoomOut() : zoomIn();
       return;
     }
     set(Math.round(s.x - (d.v * 90) / rowH));
@@ -838,7 +882,7 @@ function makeWheel(){
 function layoutProjects(){
   const pfs = g.pfs, rowH = Math.round(pfs * 1.75 * 100) / 100;
   if (!g.compact){
-    const w = ratios.proj * pfs + 3.2 * pfs;
+    const w = ratios.proj * pfs + 4.6 * pfs;   // room for the bold active number
     pProjects.style.left = (g.oR + 0.32 * g.fs) + 'px';
     pProjects.style.top = g.capTop + 'px';
     pProjects.style.width = w + 'px';
@@ -1112,16 +1156,18 @@ function makeTimeline(){
       if (document.activeElement === node) node.blur();
       const d = drag; drag = null;
       if (!d.moved){
+        let target = -1;
         if (!axisX){
           const hit = e && document.elementFromPoint(e.clientX, e.clientY), row = hit && hit.closest && hit.closest('.p-pubs .row');
-          if (row) goTo(rows.indexOf(row));
+          if (row) target = rows.indexOf(row);
         } else if (zoomed){
           const rect = tl.getBoundingClientRect(), x = (e.clientX - rect.left) / d.scale;
-          let best = 0, bd = Infinity;
+          let best = -1, bd = Infinity;
           mi.forEach((m, i) => { const q = proj(m); if (q){ const dd = Math.abs(q.x - x); if (dd < bd){ bd = dd; best = i; } } });
-          goTo(bd < 40 ? best : nearestIdx(t.x + (x - W / 2) / pxPerMonth()));
+          if (bd < g.pfs * 2) target = best;
         }
-        if (!zoomed) zoomIn();
+        if (target >= 0 && target !== active){ goTo(target); if (!zoomed) zoomIn(); return; }
+        zoomed ? zoomOut() : zoomIn();   // tapping what's already selected toggles the zoom
         return;
       }
       if (axisX) goTo(nearestIdx(t.x - (d.v * 110) / pxPerMonth()));
@@ -1339,7 +1385,7 @@ stage.addEventListener('pointerup', e => {
   }
   if (p.lock === 'y' || performance.now() - p.t > 700) return;
   if (p.link) return;
-  if (p.inPanel){ if (!zoomed) zoomIn(); return; }
+  if (p.inPanel){ zoomed ? zoomOut() : zoomIn(); return; }   // the section itself toggles the zoom
   if (zoomed){ zoomOut(); return; }
   go(state + (e.clientX < window.innerWidth * BACK_ZONE ? -1 : 1));
 });
@@ -1466,6 +1512,11 @@ async function boot(){
     ]),
   ]);
   CONTENT = content;
+  WM.weight = CONTENT.site.weight; WM.size = CONTENT.site.size;
+  document.documentElement.style.setProperty('--wmw', WM.weight);
+  if (WM.weight !== 900) await Promise.race([document.fonts.load(`${WM.weight} 100px "Inter Tight"`).catch(() => {}), new Promise(r => setTimeout(r, 2000))]);
+  if (CONTENT.site.title) document.title = CONTENT.site.title;
+  if (CONTENT.site.icon) document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(l => { l.href = CONTENT.site.icon; });
   buildContact(); buildAbout();
   wheel = makeWheel(); projects = makePanel(pProjects, { enter: () => wheel.enter() });
   timeline = makeTimeline(); pubs = makePanel(pPubs, { enter: () => timeline.enter(), exit: () => { pubT.clear(); timeline.exit(); } });
