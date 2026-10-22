@@ -1,5 +1,9 @@
 # Pages CMS configuration — https://pagescms.org
 # Defines the editing form for content.json. Project numbers are set here (empty = automatic); publication numbers are automatic.
+media:
+  input: media
+  output: media
+
 content:
   - name: site
     label: MAO website
@@ -7,6 +11,53 @@ content:
     type: file
     path: content.json
     fields:
+
+      - name: site
+        label: Site (title, link preview, icon)
+        description: "The tab title applies right away; the link preview (WhatsApp, iMessage, mail…) updates on the next publish. Messaging apps can keep an old preview cached for a while."
+        type: object
+        fields:
+          - name: title
+            label: Tab title
+            description: "Shown on the browser tab and in search results."
+            type: string
+          - name: previewTitle
+            label: Link preview — title
+            type: string
+          - name: previewDescription
+            label: Link preview — text
+            type: text
+          - name: previewImage
+            label: Link preview — image
+            description: "Ideally 1200 × 630 px (PNG or JPG)."
+            type: image
+          - name: icon
+            label: Icon (browser tab)
+            description: "Square image, at least 180 × 180 px (PNG)."
+            type: image
+          - name: wordmarkWeight
+            label: MAO — weight
+            description: "How heavy the letters are. The operator (+ × − ÷) follows in proportion."
+            type: select
+            options:
+              values:
+                - { value: "700", label: "Bold" }
+                - { value: "800", label: "Extra Bold" }
+                - { value: "900", label: "Black (current)" }
+          - name: wordmarkSize
+            label: MAO — size
+            description: "Relative to the size the site calculates for each screen. Texts keep their size."
+            type: select
+            options:
+              values:
+                - { value: "80", label: "80 %" }
+                - { value: "90", label: "90 %" }
+                - { value: "100", label: "100 % (current)" }
+                - { value: "110", label: "110 %" }
+          - name: url
+            label: Site address
+            description: "Leave as https://www.m-ao.ch"
+            type: string
 
       - name: projects
         label: Projects (×)
