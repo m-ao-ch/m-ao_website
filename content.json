@@ -1,4 +1,13 @@
 {
+  "site": {
+    "title": "M+AO",
+    "previewTitle": "M+AO | Architecture Office",
+    "previewDescription": "Architecture Office | Locarno CH | Cavenzano IT",
+    "previewImage": "media/Logo.png",
+    "icon": "media/Logo-1.png",
+    "wordmarkWeight": "700",
+    "wordmarkSize": "100"
+  },
   "projects": [
     {
       "number": "103",
@@ -15,6 +24,13 @@
       "year": "2026"
     },
     {
+      "number": "105",
+      "title": "Villa Roccabella",
+      "type": "Private house / Renovation",
+      "place": "Minusio",
+      "year": "2026"
+    },
+    {
       "number": "106",
       "title": "Rinascente 3",
       "type": "Healthcare / Conversion",
@@ -23,9 +39,16 @@
     },
     {
       "number": "108 ",
-      "title": "Casa a Ceroglie",
+      "title": "Home in Ceroglie ",
       "type": "Private house / Renewal & extension ",
       "place": "IT / Ceroglie",
+      "year": "2026"
+    },
+    {
+      "number": "109 ",
+      "title": "Ex De Bernardi",
+      "type": "Mixed use / Renovation",
+      "place": "CH / Locarno",
       "year": "2026"
     },
     {
@@ -47,8 +70,8 @@
     {
       "outlet": "Electa",
       "title": "Terræ Aquæ, 2. L’Italia e l’Intelligenza del Mare. Progetti, ricerche, visioni",
-      "year": 2025,
-      "month": 6
+      "year": 2026,
+      "month": 2
     },
     {
       "outlet": "Biennale Architettura 2025",
@@ -58,7 +81,7 @@
     }
   ],
   "about": [
-    "Founded in 2026 in Zurich, operating between Switzerland and Italy in the fields of architecture, urbanism, and research. "
+    "Founded in 2026 in Zurich, operating between Switzerland and Italy in the fields of architecture, urbanism, and research. \n\n"
   ],
   "contact": {
     "email": "info@m-ao.ch",
