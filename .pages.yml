@@ -1,5 +1,5 @@
 # Pages CMS configuration — https://pagescms.org
-# Defines the editing form for content.json. Numbers (01, 02…) are added by the site automatically.
+# Defines the editing form for content.json. Project numbers are set here (empty = automatic); publication numbers are automatic.
 content:
   - name: site
     label: MAO website
@@ -15,8 +15,12 @@ content:
         list:
           collapsible:
             collapsed: true
-            summary: "{fields.title} — {fields.place}"
+            summary: "{fields.number} {fields.title} — {fields.place}"
         fields:
+          - name: number
+            label: Number
+            description: "e.g. 01, 07, 12. Leave empty to number automatically by position."
+            type: string
           - name: title
             label: Title
             type: string
