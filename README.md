@@ -94,6 +94,42 @@ The domain is `www.m-ao.ch`, set in *Settings → Pages*. The bare
 Pages, and `www` is a CNAME to `m-ao-ch.github.io`. The registrar's MX
 and TXT records belong to the email and must not be touched.
 
+## Discoverability (SEO)
+
+The goal: someone who types **"M+AO"** into Google should land on
+`www.m-ao.ch` itself, not on a social profile or a directory listing,
+and a link to the site shared anywhere should preview as the office,
+not as a bare URL.
+
+**Already covered**, entirely from `content.json` → **Site**, written
+into `<head>` at publish time (see *Publishing* above):
+
+- `<title>` and `<meta name="description">`
+- Open Graph / Twitter preview tags (title, description, image)
+- the tab icon / apple-touch-icon
+
+**Not yet in the repo**, worth adding later without touching the
+page's behaviour (static `<head>` tags and two root-level files only
+— none of this affects the wordmark, motion, or any live content):
+
+- `robots.txt` and `sitemap.xml` at the repo root, so crawlers are
+  pointed at the single page explicitly instead of relying on default
+  crawl behaviour
+- a `<link rel="canonical" href="https://www.m-ao.ch/">` tag, so
+  `m-ao.ch` and `www.m-ao.ch` are never read as two different pages
+- a JSON-LD block (`schema.org` `ArchitectureFirm` or `Organization`)
+  naming the office, its email and its two office locations, so
+  search engines can resolve "M+AO" to this specific entity rather
+  than inferring it from prose
+- registering the domain with **Google Search Console** and
+  submitting the sitemap, which is also how indexing of a brand-new
+  domain can be requested rather than waited for
+
+None of this requires a build step beyond what `publish.yml` already
+does; the JSON-LD values would come from the same `content.json`
+fields already used for the Open Graph tags (title, description) plus
+`contact.email` and `contact.offices`.
+
 ## Structure
 
 ```
